@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Employee, CreateEmployeeData, EvaluationData, HistoryEntry } from '@/types/employee';
+import { reminderDatabase } from './reminderDatabase';
 const EMPLOYEES_COLLECTION = 'employees';
 
 
@@ -232,6 +233,15 @@ allActiveEmployees.sort((a, b) => a.contractEndDate.getTime() - b.contractEndDat
 
     if (!employeeDoc.exists()) {
       throw new Error('Employee not found');
+    }
+
+    // Delete associated reminders first
+    try {
+      await reminderDatabase.deleteReminderByEmployeeId(employeeId);
+      console.log(`[DELETE] Reminders deleted for employee: ${employeeId}`);
+    } catch (error) {
+      console.error('[DELETE] Error deleting reminders:', error);
+      // Continue with employee deletion even if reminder deletion fails
     }
 
     // Hard delete (permanent removal)

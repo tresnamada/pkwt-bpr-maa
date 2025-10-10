@@ -254,6 +254,23 @@ export const reminderDatabase = {
     await deleteDoc(doc(db, REMINDERS_COLLECTION, reminderId));
   },
 
+  // Delete reminder by employeeId (dipanggil saat employee dihapus)
+  async deleteReminderByEmployeeId(employeeId: string): Promise<void> {
+    const q = query(
+      collection(db, REMINDERS_COLLECTION),
+      where('employeeId', '==', employeeId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    // Delete all reminders for this employee
+    const deletePromises = querySnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    
+    await Promise.all(deletePromises);
+  },
+
   // Batch create reminders dari employees
   async syncRemindersFromEmployees(employees: Array<{
     id: string;

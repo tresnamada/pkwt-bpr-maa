@@ -53,7 +53,7 @@ export async function GET() {
         unit: emp.unit,
         contractEndDate: emp.contractEndDate,
         daysRemaining: daysRemaining,
-        needsReminder: daysRemaining <= 30 && daysRemaining > 0,
+        needsReminder: daysRemaining <= 30 && daysRemaining >= 0,
         lastReminderEmailSent: emp.lastReminderEmailSent,
         emailReminderCount: emp.emailReminderCount || 0,
       };
