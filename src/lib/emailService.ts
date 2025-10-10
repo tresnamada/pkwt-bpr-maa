@@ -43,21 +43,21 @@ export const emailService = {
         },
         // Add reply-to for better deliverability
         replyTo: ADMIN_EMAIL,
-        // Tags untuk tracking (opsional)
-        tags: [
-          {
-            name: 'category',
-            value: 'pkwt-reminder'
-          },
-          {
-            name: 'employee',
-            value: data.employeeName
-              .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
-              .replace(/\s+/g, '-') // Replace spaces with dashes
-              .toLowerCase()
-              .substring(0, 50) // Limit length
-          }
-        ]
+        // Tags disabled temporarily due to ASCII validation issues
+        // tags: [
+        //   {
+        //     name: 'category',
+        //     value: 'pkwt-reminder'
+        //   },
+        //   {
+        //     name: 'employee',
+        //     value: data.employeeName
+        //       .replace(/[^a-zA-Z0-9\s-]/g, '')
+        //       .replace(/\s+/g, '-')
+        //       .toLowerCase()
+        //       .substring(0, 50)
+        //   }
+        // ]
       };
 
       console.log('[EMAIL] Sending email with payload:', {
