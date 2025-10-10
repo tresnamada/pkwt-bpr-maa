@@ -29,76 +29,172 @@ export default function LogoutButton() {
 
   return (
     <>
-      <div className="flex items-center space-x-4">
-        {/* User Info */}
-        <div className="hidden md:block text-right">
-          <p className="text-sm font-semibold text-gray-900">
-            {user.email}
-          </p>
-          <p className="text-xs text-gray-500">Admin</p>
-        </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={() => setShowConfirm(true)}
-          disabled={isLoggingOut}
-          className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Logout"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className="hidden sm:inline">Keluar</span>
-        </button>
+      {/* User Info & Logout Button */}
+      <div className="flex items-center gap-4">
+        <UserInfo email={user.email || ''} />
+        <LogoutTriggerButton 
+          onClick={() => setShowConfirm(true)} 
+          disabled={isLoggingOut} 
+        />
       </div>
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 transform transition-all animate-scaleIn border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-100 to-red-50 rounded-2xl mx-auto mb-6 shadow-md">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </div>
-            
-            <h3 className="text-2xl font-bold text-gray-900 text-center mb-3">
-              Konfirmasi Logout
-            </h3>
-            
-            <p className="text-gray-600 text-center mb-8 leading-relaxed">
-              Apakah Anda yakin ingin keluar dari sistem?
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                disabled={isLoggingOut}
-                className="flex-1 px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all disabled:opacity-50 border border-gray-200"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="flex-1 px-6 py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Keluar...
-                  </>
-                ) : (
-                  'Ya, Keluar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmationModal
+          isLoggingOut={isLoggingOut}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={handleLogout}
+        />
       )}
     </>
+  );
+}
+
+// User Info Component
+function UserInfo({ email }: { email: string }) {
+  return (
+    <div className="hidden md:block text-right">
+      <p className="text-sm font-semibold text-gray-900">{email}</p>
+      <p className="text-xs text-gray-500">Admin</p>
+    </div>
+  );
+}
+
+// Logout Trigger Button Component
+function LogoutTriggerButton({ 
+  onClick, 
+  disabled 
+}: { 
+  onClick: () => void; 
+  disabled: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      title="Logout"
+    >
+      <LogoutIcon />
+      <span className="hidden sm:inline">Keluar</span>
+    </button>
+  );
+}
+
+// Logout Icon Component
+function LogoutIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2} 
+        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+      />
+    </svg>
+  );
+}
+
+// Confirmation Modal Component
+function ConfirmationModal({
+  isLoggingOut,
+  onCancel,
+  onConfirm,
+}: {
+  isLoggingOut: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform transition-all animate-scaleIn">
+        {/* Icon */}
+        <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-6">
+          <LogoutIcon />
+        </div>
+
+        {/* Title */}
+        <h3 className="text-2xl font-bold text-gray-900 text-center mb-3">
+          Konfirmasi Logout
+        </h3>
+
+        {/* Description */}
+        <p className="text-gray-600 text-center mb-8">
+          Apakah Anda yakin ingin keluar dari sistem?
+        </p>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <CancelButton onClick={onCancel} disabled={isLoggingOut} />
+          <ConfirmButton onClick={onConfirm} isLoading={isLoggingOut} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Cancel Button Component
+function CancelButton({ 
+  onClick, 
+  disabled 
+}: { 
+  onClick: () => void; 
+  disabled: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Batal
+    </button>
+  );
+}
+
+// Confirm Button Component
+function ConfirmButton({ 
+  onClick, 
+  isLoading 
+}: { 
+  onClick: () => void; 
+  isLoading: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={isLoading}
+      className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+    >
+      {isLoading ? (
+        <>
+          <LoadingSpinner />
+          <span>Keluar...</span>
+        </>
+      ) : (
+        'Ya, Keluar'
+      )}
+    </button>
+  );
+}
+
+// Loading Spinner Component
+function LoadingSpinner() {
+  return (
+    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+      <circle 
+        className="opacity-25" 
+        cx="12" 
+        cy="12" 
+        r="10" 
+        stroke="currentColor" 
+        strokeWidth="4"
+      />
+      <path 
+        className="opacity-75" 
+        fill="currentColor" 
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
   );
 }

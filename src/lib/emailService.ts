@@ -94,9 +94,7 @@ export const emailService = {
     }
   },
 
-  /**
-   * Cek apakah email sudah dikirim dalam 24 jam terakhir
-   */
+
   shouldSendEmail(lastEmailSent?: Date): boolean {
     if (!lastEmailSent) {
       return true;

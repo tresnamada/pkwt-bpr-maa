@@ -13,9 +13,10 @@ export async function GET() {
     console.log('='.repeat(80));
     console.log('[TEST-SIMPLE] Testing email service');
     console.log('[TEST-SIMPLE] Environment check:');
-    console.log('  - RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'SET ✓' : 'NOT SET ✗');
+    console.log('  - RESEND_API_KEY:', process.env.RESEND_API_KEY ? `SET ✓ (${process.env.RESEND_API_KEY.substring(0, 8)}...)` : 'NOT SET ✗');
     console.log('  - ADMIN_EMAILS:', ADMIN_EMAILS.join(', '));
     console.log('  - SENDER_EMAIL:', process.env.SENDER_EMAIL || 'onboarding@resend.dev');
+    console.log('  - NODE_ENV:', process.env.NODE_ENV);
     console.log('='.repeat(80));
 
     // Data dummy untuk test
