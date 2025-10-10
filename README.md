@@ -2,7 +2,24 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### 1. Setup Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+# Resend Email Configuration
+RESEND_API_KEY=re_your_api_key_here
+SENDER_EMAIL=onboarding@resend.dev
+ADMIN_EMAILS=admin@bprmaa.com
+```
+
+**Important:**
+- Get your Resend API key from https://resend.com/api-keys
+- No spaces around `=`
+- No quotes around values (unless the value contains spaces)
+- Restart the dev server after adding/modifying environment variables
+
+### 2. Run the development server:
 
 ```bash
 npm run dev

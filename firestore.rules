@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write for employees collection
+    // Server-side API routes need access for cron jobs
+    match /employees/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow test collection for Firebase testing
+    match /test/{document} {
+      allow read, write: if true;
+    }
+    
+    // Default: Allow all access
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
