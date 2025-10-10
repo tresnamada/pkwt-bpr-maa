@@ -51,7 +51,11 @@ export const emailService = {
           },
           {
             name: 'employee',
-            value: data.employeeName.replace(/\s/g, '-').toLowerCase()
+            value: data.employeeName
+              .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+              .replace(/\s+/g, '-') // Replace spaces with dashes
+              .toLowerCase()
+              .substring(0, 50) // Limit length
           }
         ]
       };
