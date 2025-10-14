@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase service account
+firebase-service-account.json
+*service-account*.json
+check-data.js
+import-csv-to-firebase.js
+deleteCollection.js

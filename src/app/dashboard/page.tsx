@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [reminders, setReminders] = useState<Employee[]>([]);
   const [unevaluatedCount, setUnevaluatedCount] = useState(0);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [reminderStats, setReminderStats] = useState<{
     pending: number;
     notified: number;
@@ -69,9 +70,7 @@ export default function DashboardPage() {
 
   const loadReminderStats = async () => {
     try {
-      // Sync reminders first
       await reminderDatabase.syncRemindersFromEmployees(await employeeService.getAllEmployees());
-      // Get statistics
       const stats = await reminderDatabase.getStatistics();
       setReminderStats(stats);
     } catch (error) {
@@ -111,27 +110,44 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-gray-100">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-6 gap-3 sm:gap-0">
-              <div className="w-full sm:w-auto">
-                <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
-                  <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gradient-to-br from-red-600 to-red-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md">
-                    <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                    Dashboard PKWT
-                  </h1>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50">
+        {/* Top Navigation Bar */}
+        <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16 md:h-20">
+              {/* Logo & Title */}
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-600 via-red-500 to-rose-600 rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform">
+                  <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-600 ml-10 sm:ml-13 truncate max-w-[200px] sm:max-w-none">
-                  Selamat datang, {user?.email}
-                </p>
+                <div>
+                  <h1 className="text-lg md:text-2xl font-bold text-gray-900 tracking-tight">Dashboard PKWT</h1>
+                  <p className="text-xs text-gray-500 hidden sm:block">Sistem Manajemen Kontrak</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
+
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center space-x-3">
+                <Link
+                  href="/applicants"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Pelamar
+                </Link>
+                <Link
+                  href="/cron-settings"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Testing
+                </Link>
                 <NotificationPanel 
                   onNotificationClick={(notification) => {
                     const employee = employees.find(emp => emp.id === notification.employeeId);
@@ -140,127 +156,153 @@ export default function DashboardPage() {
                     }
                   }}
                 />
+                <div className="w-px h-8 bg-gray-200"></div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-right hidden lg:block">
+                    <p className="text-xs text-gray-500">Admin</p>
+                  </div>
+                  <LogoutButton />
+                </div>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button 
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile Menu */}
+            {showMobileMenu && (
+              <div className="md:hidden py-4 border-t border-gray-200">
+                <Link
+                  href="/applicants"
+                  className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Database Pelamar
+                </Link>
                 <Link
                   href="/cron-settings"
-                  className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all"
-                  title="Pengaturan Cron Job"
+                  className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
                 >
-                  <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="hidden sm:inline">Testing</span>
+                  Testing Cron Job
                 </Link>
-                <LogoutButton />
+                <div className="px-4 py-3 mt-2 border-t border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                  <p className="text-xs text-gray-500">Administrator</p>
+                </div>
+                <div className="px-4 mt-2">
+                  <LogoutButton />
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        </header>
+        </nav>
 
-        {/* Stats Cards */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+          {/* Welcome Section */}
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              Selamat Datang Kembali
+            </h2>
+            <p className="text-sm md:text-base text-gray-600">
+              Kelola dan pantau status kontrak karyawan PKWT Anda dengan mudah
+            </p>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
             {/* Active Employees Card */}
-            <div className="group bg-white hover:bg-gradient-to-br hover:from-green-50 hover:to-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 hover:border-green-200 transition-all duration-300">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 mb-1">Karyawan Aktif</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">{activeEmployees.length}</p>
-                    </div>
+            <div className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-200 transition-all duration-300 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                 </div>
+                <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{activeEmployees.length}</p>
+                <p className="text-sm font-medium text-gray-600">Karyawan Aktif</p>
               </div>
             </div>
 
-            {/* Reminders Card - Link to Database Reminder */}
-            <Link href="/reminders" className="group bg-gradient-to-br from-yellow-50 to-white hover:from-yellow-100 hover:to-white rounded-2xl shadow-sm hover:shadow-lg border border-yellow-200 hover:border-yellow-300 transition-all duration-300 cursor-pointer">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.5-1.5M5.07 19H19a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 mb-1">Perlu Pengingat</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
-                        {reminderStats ? (reminderStats.pending + reminderStats.notified) : reminders.length}
-                      </p>
-                      {reminderStats && reminderStats.urgent > 0 && (
-                        <p className="text-xs text-red-600 font-semibold mt-1">🚨 {reminderStats.urgent} Urgent</p>
-                      )}
-                    </div>
+            {/* Reminders Card */}
+            <Link href="/reminders" className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-200 transition-all duration-300 overflow-hidden cursor-pointer">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                  <svg className="h-5 w-5 text-gray-400 group-hover:text-yellow-600 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  {reminderStats && reminderStats.urgent > 0 && (
+                    <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                      {reminderStats.urgent} Urgent
+                    </span>
+                  )}
                 </div>
+                <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
+                  {reminderStats ? (reminderStats.pending + reminderStats.notified) : reminders.length}
+                </p>
+                <p className="text-sm font-medium text-gray-600">Perlu Pengingat</p>
               </div>
             </Link>
 
             {/* Expired Card */}
-            <div className="group bg-white hover:bg-gradient-to-br hover:from-red-50 hover:to-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 hover:border-red-200 transition-all duration-300">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 mb-1">Kontrak Berakhir</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">{expiredEmployees.length}</p>
-                    </div>
+            <div className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-200 transition-all duration-300 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-rose-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </div>
                 </div>
+                <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{expiredEmployees.length}</p>
+                <p className="text-sm font-medium text-gray-600">Kontrak Berakhir</p>
               </div>
             </div>
 
-            {/* Evaluated Card - Clickable */}
-            <Link href="/evaluated" className="group bg-gradient-to-br from-gray-50 to-white hover:from-blue-50 hover:to-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-200 hover:border-blue-300 transition-all duration-300 cursor-pointer">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 mb-1">Sudah Dievaluasi</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">{evaluatedEmployees.length}</p>
-                    </div>
+            {/* Evaluated Card */}
+            <Link href="/evaluated" className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-200 transition-all duration-300 overflow-hidden cursor-pointer">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
                   </div>
-                  <svg className="h-5 w-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
                 </div>
+                <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{evaluatedEmployees.length}</p>
+                <p className="text-sm font-medium text-gray-600">Sudah Dievaluasi</p>
               </div>
             </Link>
           </div>
 
-          {/* Reminders Alert */}
+          {/* Alert Banners */}
           {reminders.length > 0 && (
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-r-xl p-5 mb-8 shadow-sm">
+            <div className="mb-8 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-l-4 border-amber-600 rounded-r-2xl p-5 shadow-sm">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
-                    <svg className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center shadow-md">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold text-yellow-900 mb-1">Perhatian!</h3>
-                  <p className="text-sm text-yellow-800 leading-relaxed">
+                  <h3 className="text-sm font-bold text-amber-900 mb-1">Perhatian!</h3>
+                  <p className="text-sm text-amber-800">
                     Ada <span className="font-bold">{reminders.length} karyawan</span> yang kontraknya akan berakhir dalam 30 hari dan perlu dievaluasi segera.
                   </p>
                 </div>
@@ -268,20 +310,19 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Unevaluated Alert */}
           {unevaluatedCount > 0 && (
-            <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-r-xl p-5 mb-8 shadow-sm">
+            <div className="mb-8 bg-gradient-to-r from-red-50 via-rose-50 to-red-50 border-l-4 border-red-600 rounded-r-2xl p-5 shadow-sm">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-500 rounded-xl flex items-center justify-center shadow-md">
-                    <svg className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-md">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </div>
                 <div className="flex-1">
                   <h3 className="text-sm font-bold text-red-900 mb-1">Karyawan Belum Dievaluasi!</h3>
-                  <p className="text-sm text-red-800 leading-relaxed">
+                  <p className="text-sm text-red-800">
                     Ada <span className="font-bold">{unevaluatedCount} karyawan</span> yang kontraknya sudah berakhir dan belum dievaluasi. Silakan evaluasi segera!
                   </p>
                 </div>
@@ -290,17 +331,17 @@ export default function DashboardPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Daftar Karyawan PKWT</h2>
               <p className="text-sm text-gray-600 mt-1">Kelola dan pantau karyawan kontrak yang aktif dan expired</p>
               <p className="text-xs text-gray-500 mt-1">
-                💡 Karyawan yang sudah dievaluasi dapat dilihat di halaman <Link href="/evaluated" className="text-blue-600 hover:underline font-medium">Karyawan Dievaluasi</Link>
+                💡 Karyawan yang sudah dievaluasi dapat dilihat di halaman <Link href="/evaluated" className="text-red-600 hover:underline font-medium">Karyawan Dievaluasi</Link>
               </p>
             </div>
             <button
               onClick={handleAddEmployee}
-              className="group flex items-center space-x-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+              className="group flex items-center space-x-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
             >
               <svg className="h-5 w-5 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -309,10 +350,10 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Employee List - Hanya tampilkan karyawan yang belum dievaluasi */}
+          {/* Employee List */}
           {loading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             </div>
           ) : (
             <EmployeeList
@@ -321,7 +362,7 @@ export default function DashboardPage() {
               onRefresh={loadEmployees}
             />
           )}
-        </div>
+        </main>
 
         {/* Modals */}
         {showAddModal && (

@@ -17,76 +17,97 @@ export const emailService = {
         };
       }
 
+      // Convert to array of recipients
       const recipients = Array.isArray(adminEmail) 
         ? adminEmail 
-        : (adminEmail || ADMIN_EMAILS);
+        : (typeof adminEmail === 'string' ? [adminEmail] : ADMIN_EMAILS);
+
+      console.log('[EMAIL] Preparing to send emails to:', recipients);
 
       const isOverdue = data.daysRemaining < 0;
       const subjectLine = isOverdue
         ? `🚨 URGENT - Evaluasi Tertunda ${Math.abs(data.daysRemaining)} Hari - ${data.employeeName}`
         : `⚠️ Pengingat Evaluasi PKWT - ${data.employeeName} (${data.daysRemaining} hari lagi)`;
 
-      const emailPayload = {
-        from: `BPR MAA - Sistem PKWT <${SENDER_EMAIL}>`,
-        to: recipients,
-        subject: subjectLine,
-        html: generateReminderEmailHTML(data),
-        text: generateReminderEmailText(data),
-        // Headers to improve deliverability dan avoid spam
-        headers: {
-          'X-Entity-Ref-ID': `pkwt-${Date.now()}`,
-          'X-Priority': '1',
-          'Importance': 'high',
-          'X-Mailer': 'BPR-MAA-PKWT-System',
-          'X-Auto-Response-Suppress': 'OOF, DR, RN, NRN, AutoReply',
-          'List-Unsubscribe': `<mailto:noreply@bprmaa.com?subject=unsubscribe>`,
-        },
-        // Add reply-to for better deliverability
-        replyTo: ADMIN_EMAIL,
-        // Tags disabled temporarily due to ASCII validation issues
-        // tags: [
-        //   {
-        //     name: 'category',
-        //     value: 'pkwt-reminder'
-        //   },
-        //   {
-        //     name: 'employee',
-        //     value: data.employeeName
-        //       .replace(/[^a-zA-Z0-9\s-]/g, '')
-        //       .replace(/\s+/g, '-')
-        //       .toLowerCase()
-        //       .substring(0, 50)
-        //   }
-        // ]
-      };
+      // Send email to each recipient individually
+      // This ensures better deliverability and avoids Resend's multiple recipient issues
+      const results = [];
+      const errors = [];
 
-      console.log('[EMAIL] Sending email with payload:', {
-        from: emailPayload.from,
-        to: emailPayload.to,
-      });
+      for (const recipient of recipients) {
+        try {
+          const emailPayload = {
+            from: `BPR MAA - Sistem PKWT <${SENDER_EMAIL}>`,
+            to: recipient, // Send to ONE recipient at a time
+            subject: subjectLine,
+            html: generateReminderEmailHTML(data),
+            text: generateReminderEmailText(data),
+            // Headers to improve deliverability dan avoid spam
+            headers: {
+              'X-Entity-Ref-ID': `pkwt-${Date.now()}-${recipient}`,
+              'X-Priority': '1',
+              'Importance': 'high',
+              'X-Mailer': 'BPR-MAA-PKWT-System',
+              'X-Auto-Response-Suppress': 'OOF, DR, RN, NRN, AutoReply',
+              'List-Unsubscribe': `<mailto:noreply@bprmaa.com?subject=unsubscribe>`,
+            },
+            // Add reply-to for better deliverability
+            replyTo: ADMIN_EMAIL,
+          };
 
-      const response = await resend.emails.send(emailPayload);
+          console.log(`[EMAIL] Sending to: ${recipient}`);
 
-      if (response.error) {
-        console.error('[EMAIL] Resend API error:', response.error);
-        return {
-          success: false,
-          error: response.error.message || 'Failed to send email',
-        };
+          const response = await resend.emails.send(emailPayload);
+
+          if (response.error) {
+            console.error(`[EMAIL] ✗ Failed to send to ${recipient}:`, response.error);
+            errors.push({
+              recipient,
+              error: response.error.message || 'Failed to send email',
+            });
+          } else {
+            console.log(`[EMAIL] ✓ Successfully sent to ${recipient}:`, response.data?.id);
+            results.push({
+              recipient,
+              emailId: response.data?.id,
+            });
+          }
+
+          // Add small delay between emails to avoid rate limiting
+          if (recipients.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (error: unknown) {
+          const err = error as Error;
+          console.error(`[EMAIL] ✗ Exception sending to ${recipient}:`, error);
+          errors.push({
+            recipient,
+            error: err.message || 'Unknown error occurred',
+          });
+        }
       }
 
-      console.log('[EMAIL] ✓ Email sent successfully:', {
-        emailId: response.data?.id,
-        to: emailPayload.to,
-      });
-
-      return {
-        success: true,
-        emailId: response.data?.id,
-      };
+      // Return success if at least one email was sent
+      if (results.length > 0) {
+        console.log(`[EMAIL] Summary: ${results.length}/${recipients.length} emails sent successfully`);
+        if (errors.length > 0) {
+          console.warn('[EMAIL] Some emails failed:', errors);
+        }
+        return {
+          success: true,
+          emailId: results.map(r => r.emailId).join(', '),
+          message: `Sent to ${results.length}/${recipients.length} recipients`,
+        };
+      } else {
+        console.error('[EMAIL] All emails failed to send');
+        return {
+          success: false,
+          error: `Failed to send to all recipients: ${errors.map(e => `${e.recipient}: ${e.error}`).join('; ')}`,
+        };
+      }
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('Error sending email:', error);
+      console.error('[EMAIL] Fatal error in sendReminderEmail:', error);
       return {
         success: false,
         error: err.message || 'Unknown error occurred',

@@ -167,16 +167,30 @@ export const reminderDatabase = {
     const allReminders = await this.getPendingReminders();
     const now = new Date();
     
-    return allReminders.filter(reminder => {
+    console.log(`[REMINDER-EMAIL] Checking ${allReminders.length} pending reminders`);
+    
+    const needingEmail = allReminders.filter(reminder => {
       // Jika belum pernah kirim email, kirim sekarang
       if (!reminder.lastEmailSent) {
+        console.log(`[REMINDER-EMAIL] ✓ ${reminder.employeeName} - Never sent email, needs email`);
         return true;
       }
       
       // Cek apakah sudah 24 jam sejak email terakhir
       const hoursSinceLastEmail = (now.getTime() - reminder.lastEmailSent.getTime()) / (1000 * 60 * 60);
-      return hoursSinceLastEmail >= 24;
+      const needsEmail = hoursSinceLastEmail >= 24;
+      
+      if (needsEmail) {
+        console.log(`[REMINDER-EMAIL] ✓ ${reminder.employeeName} - Last sent ${hoursSinceLastEmail.toFixed(1)}h ago, needs email`);
+      } else {
+        console.log(`[REMINDER-EMAIL] ⊘ ${reminder.employeeName} - Last sent ${hoursSinceLastEmail.toFixed(1)}h ago, too recent`);
+      }
+      
+      return needsEmail;
     });
+    
+    console.log(`[REMINDER-EMAIL] Result: ${needingEmail.length} reminders need email`);
+    return needingEmail;
   },
 
   // Update reminder
@@ -280,23 +294,35 @@ export const reminderDatabase = {
     status: string;
   }>): Promise<void> {
     const now = new Date();
+    console.log(`[REMINDER-SYNC] Processing ${employees.length} employees`);
+
+    let created = 0;
+    let skipped = 0;
+    let resolved = 0;
 
     for (const employee of employees) {
       const daysRemaining = Math.ceil((employee.contractEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
+      console.log(`[REMINDER-SYNC] Employee: ${employee.name}, Status: ${employee.status}, Days: ${daysRemaining}`);
+      
       // Skip jika sudah dievaluasi
       if (employee.status === 'evaluated') {
+        console.log(`[REMINDER-SYNC] ⊘ Skipping ${employee.name} - already evaluated`);
         // Resolve reminder jika ada
         const existing = await this.getReminderByEmployeeId(employee.id);
         if (existing) {
           await this.markAsResolved(existing.id, 'System');
+          resolved++;
         }
+        skipped++;
         continue;
       }
 
       // Buat/update reminder jika perlu
       if (daysRemaining <= 30 || employee.status === 'expired') {
         const reminderType = daysRemaining < 0 ? 'overdue' : 'upcoming';
+        
+        console.log(`[REMINDER-SYNC] ✓ Creating/updating reminder for ${employee.name} (${reminderType}, ${daysRemaining} days)`);
         
         await this.createReminder({
           employeeId: employee.id,
@@ -306,8 +332,14 @@ export const reminderDatabase = {
           reminderType: reminderType,
           daysRemaining: daysRemaining,
         });
+        created++;
+      } else {
+        console.log(`[REMINDER-SYNC] ⊘ Skipping ${employee.name} - ${daysRemaining} days remaining (> 30)`);
+        skipped++;
       }
     }
+
+    console.log(`[REMINDER-SYNC] Summary: Created/Updated=${created}, Skipped=${skipped}, Resolved=${resolved}`);
   },
 
   // Get statistics

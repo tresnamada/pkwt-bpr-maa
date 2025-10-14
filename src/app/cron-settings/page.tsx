@@ -23,6 +23,7 @@ interface CronResult {
 
 export default function CronSettingsPage() {
   const [testing, setTesting] = useState(false);
+  const [forceSending, setForceSending] = useState(false);
   const [result, setResult] = useState<CronResult | null>(null);
   const [error, setError] = useState<string>('');
 
@@ -45,6 +46,32 @@ export default function CronSettingsPage() {
       setError(error.message || 'Failed to test cron job');
     } finally {
       setTesting(false);
+    }
+  };
+
+  const forceSendReminders = async () => {
+    if (!confirm('⚠️ WARNING: This will send emails immediately, bypassing the 24-hour cooldown. Continue?')) {
+      return;
+    }
+
+    setForceSending(true);
+    setResult(null);
+    setError('');
+
+    try {
+      const response = await fetch('/api/cron/force-send-reminders');
+      const data = await response.json();
+      
+      if (data.success) {
+        setResult(data);
+      } else {
+        setError(data.error || 'Unknown error');
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Failed to force send reminders');
+    } finally {
+      setForceSending(false);
     }
   };
 
@@ -178,7 +205,7 @@ export default function CronSettingsPage() {
 
                 <button
                   onClick={testCronJob}
-                  disabled={testing}
+                  disabled={testing || forceSending}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all"
                 >
                   {testing ? (
@@ -195,10 +222,45 @@ export default function CronSettingsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Jalankan Test Sekarang
+                      Test Normal (24h Cooldown)
                     </>
                   )}
                 </button>
+
+                {/* Force Send Button */}
+                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-start gap-2 mb-2">
+                    <svg className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="text-xs text-orange-800">
+                      <p className="font-semibold">Testing Only:</p>
+                      <p>Bypass 24-hour cooldown dan kirim email sekarang</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={forceSendReminders}
+                    disabled={testing || forceSending}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm hover:shadow-md transition-all"
+                  >
+                    {forceSending ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Force Sending...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Force Send (Bypass Cooldown)
+                      </>
+                    )}
+                  </button>
+                </div>
 
                 {/* Result Display */}
                 {result && (
