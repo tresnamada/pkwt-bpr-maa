@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -32,12 +33,12 @@ export default function Home() {
           {/* Left Side - Hero Section */}
           <div className="text-center md:text-left space-y-6">
             <div className="inline-flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md">
-              <div className="h-10 w-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <span className="text-sm font-semibold text-gray-700">BPR MAA</span>
+              <Image 
+                src="/Logo Bpr.png" 
+                alt="Logo BPR MAA" 
+                className="h-10 w-10 object-contain"
+              />
+              <span className="text-sm font-semibold text-gray-700">Bank BPR MAA</span>
             </div>
             
             <div>

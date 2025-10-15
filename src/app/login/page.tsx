@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -79,17 +80,22 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-500 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform">
-              <svg className="w-11 h-11 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+            <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform p-3">
+              <Image
+                src="/Logo Bpr.png" 
+                alt="Logo BPR MAA" 
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
-          <h2 className="text-4xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+          <h2 className="text-4xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
             Login Admin
           </h2>
-          <p className="text-gray-600 text-base">
-            Sistem Pengingat PKWT BPR MAA
+          <p className="text-gray-600 text-base font-medium">
+            Bank BPR MAA
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+            Sistem Pengingat PKWT
           </p>
         </div>
 

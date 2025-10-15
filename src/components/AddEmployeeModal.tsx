@@ -154,7 +154,7 @@ export default function AddEmployeeModal({ onClose, onEmployeeAdded }: AddEmploy
                   className="block w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all duration-200 hover:border-gray-300 appearance-none cursor-pointer"
                 >
                   <option value="" className="text-gray-400">Pilih Unit/Cabang</option>
-                  <option value="Kantor Pusat">Kantor Pusat</option>
+                  <option value="Kantor Pusat">Kantor Utama</option>
                   <option value="Cabang Ngaliyan">Cabang Ngaliyan</option>
                   <option value="Cabang Majapahit">Cabang Majapahit</option>
                   <option value="Cabang Kedungmundu">Cabang Kedungmundu</option>

@@ -1,8 +1,7 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/contexts/AuthContext";
+import type { Metadata } from "next";
+import ClientWrapper from "@/components/ClientWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,21 +18,18 @@ export const metadata: Metadata = {
   description: "Sistem Manajemen Perjanjian Kerja Waktu Tertentu (PKWT) BPR MAA",
 };
 
+
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="id">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ErrorBoundary>
+        <ClientWrapper>{children}</ClientWrapper>
       </body>
     </html>
   );

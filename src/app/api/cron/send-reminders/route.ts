@@ -29,13 +29,11 @@ export async function GET(request: NextRequest) {
     console.log('[CRON] Environment:', process.env.NODE_ENV);
     console.log('[CRON] Auth check:', shouldCheckAuth ? 'enabled' : 'disabled');
 
-    // 1. Ambil semua karyawan aktif
     const allEmployees = await employeeService.getAllEmployees();
     const activeEmployees = allEmployees.filter(emp => emp.status === 'active');
 
     console.log(`[CRON] Found ${activeEmployees.length} active employees`);
 
-    // 2. Filter karyawan yang perlu reminder (sisa ≤ 30 hari)
     const now = new Date();
     const employeesNeedingReminder = activeEmployees.filter(emp => {
       const daysRemaining = emailService.calculateDaysRemaining(emp.contractEndDate);
@@ -46,7 +44,6 @@ export async function GET(request: NextRequest) {
 
     console.log(`[CRON] Found ${employeesNeedingReminder.length} employees needing reminder`);
 
-    // 3. Ambil karyawan yang belum dievaluasi selama 30 hari (status expired)
     const unevaluatedEmployees = await employeeService.getUnevaluatedNeedingEmailReminder();
     console.log(`[CRON] Found ${unevaluatedEmployees.length} unevaluated employees needing email reminder (30+ days expired)`);
     
@@ -58,7 +55,6 @@ export async function GET(request: NextRequest) {
       })));
     }
 
-    // Gabungkan kedua list karyawan yang perlu email
     const allEmployeesNeedingEmail = [...employeesNeedingReminder, ...unevaluatedEmployees];
 
     const results = {
@@ -79,11 +75,9 @@ export async function GET(request: NextRequest) {
       }>,
     };
 
-    // 4. Loop setiap karyawan dan kirim email jika belum dikirim hari ini
     for (const employee of allEmployeesNeedingEmail) {
       const daysRemaining = emailService.calculateDaysRemaining(employee.contractEndDate);
       
-      // Cek apakah email sudah dikirim dalam 24 jam terakhir
       const shouldSend = emailService.shouldSendEmail(employee.lastReminderEmailSent);
       
       console.log(`[CRON] Processing ${employee.name}:`, {

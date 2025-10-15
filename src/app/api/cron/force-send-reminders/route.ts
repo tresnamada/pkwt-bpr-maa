@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {  NextResponse } from 'next/server';
 import { employeeService } from '@/lib/employeeService';
 import { reminderDatabase } from '@/lib/reminderDatabase';
 import { emailService } from '@/lib/emailService';
@@ -7,12 +7,7 @@ import { ADMIN_EMAILS } from '@/lib/resend';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/**
- * Force Send Reminders - TESTING ONLY
- * Bypasses 24-hour cooldown and sends emails immediately
- * Endpoint: GET /api/cron/force-send-reminders
- */
-export async function GET(request : NextRequest) {
+export async function GET() {
   try {
     console.log('[FORCE-SEND] ⚠️ WARNING: Force send mode - bypassing 24h cooldown');
     console.log('[FORCE-SEND] Starting at:', new Date().toISOString());

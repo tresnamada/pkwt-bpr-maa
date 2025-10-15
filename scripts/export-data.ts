@@ -1,13 +1,7 @@
-/**
- * Script untuk export data dari Firestore
- * Run: npx tsx scripts/export-data.ts
- */
-
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import * as fs from 'fs';
 
-// Firebase config dari .env.local
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
