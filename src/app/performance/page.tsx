@@ -17,6 +17,7 @@ export default function PerformancePage() {
   const [filterPosition, setFilterPosition] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [, setStatistics] = useState<unknown>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -38,6 +39,18 @@ export default function PerformancePage() {
     }
   };
 
+
+  const toggleCard = (id: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const handleDeleteEvaluation = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus evaluasi ini?')) {
@@ -91,7 +104,7 @@ export default function PerformancePage() {
               {/* Logo & Title */}
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform p-1.5">
-                  <Image
+                  <img
                     src="/Logo Bpr.png" 
                     alt="Logo BPR MAA" 
                     className="w-full h-full object-contain"
@@ -287,84 +300,126 @@ export default function PerformancePage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {filteredEvaluations.map((evaluation) => (
-                <div
-                  key={evaluation.id}
-                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-200 transition-all duration-300"
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                    {/* Left Section - Employee Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900">{evaluation.employeeName}</h3>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                              {evaluation.position}
-                            </span>
-                            <span className="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
-                              {evaluation.unit}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(evaluation.evaluationDate).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                              })}
-                            </span>
+            <div className="grid grid-cols-1 gap-4">
+              {filteredEvaluations.map((evaluation) => {
+                const isExpanded = expandedCards.has(evaluation.id);
+                return (
+                  <div
+                    key={evaluation.id}
+                    className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg"
+                  >
+                    {/* Card Header - Always Visible */}
+                    <div 
+                      onClick={() => toggleCard(evaluation.id)}
+                      className="p-4 md:p-5 cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                            <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Questions with Ratings */}
-                      <div className="mt-4 space-y-2">
-                        <h4 className="text-sm font-semibold text-gray-700">Penilaian Kinerja:</h4>
-                        <div className="space-y-2">
-                          {evaluation.questions.map((question, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <span className="text-sm text-gray-700 flex-1">{question.question}</span>
-                              <span className={`px-3 py-1 text-xs font-semibold rounded-full ml-3 ${getRatingColor(question.rating)}`}>
-                                {getRatingLabel(question.rating)}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">{evaluation.employeeName}</h3>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="px-2.5 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                                {evaluation.position}
+                              </span>
+                              <span className="px-2.5 py-0.5 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                                {evaluation.unit}
+                              </span>
+                              <span className="text-xs text-gray-500 hidden sm:inline">
+                                {new Date(evaluation.evaluationDate).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
                               </span>
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Notes */}
-                      {evaluation.overallNotes && (
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <h4 className="text-sm font-semibold text-blue-900 mb-1">Catatan:</h4>
-                          <p className="text-sm text-blue-800">{evaluation.overallNotes}</p>
+                        
+                        {/* Expand/Collapse Icon */}
+                        <div className="flex items-center gap-2">
+                          <svg 
+                            className={`w-5 h-5 md:w-6 md:h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         </div>
-                      )}
-
-                      <div className="mt-3 text-xs text-gray-500">
-                        Dievaluasi oleh: {evaluation.evaluatedBy}
                       </div>
                     </div>
 
-                    {/* Right Section - Actions */}
-                    <div className="flex lg:flex-col gap-2">
-                      <button
-                        onClick={() => handleDeleteEvaluation(evaluation.id)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 hover:text-white hover:bg-red-600 border border-red-300 hover:border-red-600 rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Hapus
-                      </button>
+                    {/* Card Body - Expandable Content */}
+                    <div 
+                      className={`transition-all duration-300 ease-in-out ${
+                        isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                      } overflow-hidden`}
+                    >
+                      <div className="px-4 md:px-5 pb-4 md:pb-5 pt-0 border-t border-gray-100">
+                        {/* Questions with Ratings */}
+                        <div className="mt-4 space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Penilaian Kinerja
+                          </h4>
+                          <div className="space-y-2">
+                            {evaluation.questions.map((question, index) => (
+                              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg gap-2 hover:bg-gray-100 transition-colors">
+                                <span className="text-sm text-gray-700 flex-1">{index + 1}. {question.question}</span>
+                                <span className={`px-3 py-1 text-xs font-semibold rounded-full w-fit ${getRatingColor(question.rating)}`}>
+                                  {getRatingLabel(question.rating)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Notes */}
+                        {evaluation.overallNotes && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="text-sm font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                              </svg>
+                              Catatan
+                            </h4>
+                            <p className="text-sm text-blue-800">{evaluation.overallNotes}</p>
+                          </div>
+                        )}
+
+                        {/* Footer Info & Actions */}
+                        <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="text-xs text-gray-500 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Dievaluasi oleh: <span className="font-medium text-gray-700">{evaluation.evaluatedBy}</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEvaluation(evaluation.id);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 hover:text-white hover:bg-red-600 border border-red-300 hover:border-red-600 rounded-lg transition-colors w-fit"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </main>

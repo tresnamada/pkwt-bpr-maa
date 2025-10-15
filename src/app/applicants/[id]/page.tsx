@@ -74,7 +74,7 @@ export default function ApplicantDetailPage() {
       setSaving(false);
     }
   };
-
+  
   const handleHasilChange = (hasil: HasilAkhir) => {
     setFormData({
       ...formData,
