@@ -86,8 +86,8 @@ export default function PerformancePage() {
 
   const filteredEvaluations = evaluations
     .filter(e => filterPosition === 'all' || e.position === filterPosition)
-    .filter(e => 
-      searchQuery === '' || 
+    .filter(e =>
+      searchQuery === '' ||
       e.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.unit.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -105,14 +105,14 @@ export default function PerformancePage() {
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform p-1.5">
                   <img
-                    src="/Logo Bpr.png" 
-                    alt="Logo BPR MAA" 
+                    src="/Logo Bpr.png"
+                    alt="Logo BPR MAA"
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <div>
                   <h1 className="text-base md:text-xl font-bold text-gray-900 tracking-tight">Bank BPR MAA</h1>
-                  <p className="text-xs text-gray-500 hidden sm:block">Rangkuman Nilai Karyawan</p>
+                  <p className="text-xs text-gray-500 hidden sm:block">Rapot Kompetensi OPS</p>
                 </div>
               </div>
 
@@ -146,7 +146,7 @@ export default function PerformancePage() {
               </div>
 
               {/* Mobile Menu Button */}
-              <button 
+              <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
@@ -249,7 +249,7 @@ export default function PerformancePage() {
                   placeholder="Cari nama karyawan atau unit..."
                 />
               </div>
-              
+
               {/* Position Filter */}
               <select
                 value={filterPosition}
@@ -262,7 +262,7 @@ export default function PerformancePage() {
                 ))}
               </select>
             </div>
-            
+
             <Link
               href="/performance/add"
               className="group flex items-center justify-center space-x-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all w-full sm:w-auto"
@@ -309,7 +309,7 @@ export default function PerformancePage() {
                     className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg"
                   >
                     {/* Card Header - Always Visible */}
-                    <div 
+                    <div
                       onClick={() => toggleCard(evaluation.id)}
                       className="p-4 md:p-5 cursor-pointer hover:bg-gray-50 transition-colors"
                     >
@@ -339,13 +339,13 @@ export default function PerformancePage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Expand/Collapse Icon */}
                         <div className="flex items-center gap-2">
-                          <svg 
+                          <svg
                             className={`w-5 h-5 md:w-6 md:h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                            fill="none" 
-                            stroke="currentColor" 
+                            fill="none"
+                            stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -355,10 +355,9 @@ export default function PerformancePage() {
                     </div>
 
                     {/* Card Body - Expandable Content */}
-                    <div 
-                      className={`transition-all duration-300 ease-in-out ${
-                        isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                      } overflow-hidden`}
+                    <div
+                      className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                        } overflow-hidden`}
                     >
                       <div className="px-4 md:px-5 pb-4 md:pb-5 pt-0 border-t border-gray-100">
                         {/* Questions with Ratings */}
