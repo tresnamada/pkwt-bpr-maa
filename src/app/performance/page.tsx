@@ -188,7 +188,7 @@ export default function PerformancePage() {
           {/* Welcome Section */}
           <div className="mb-8 md:mb-12">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-              Rangkuman Nilai Karyawan
+              Rapot Kompetensi OPS
             </h2>
             <p className="text-sm md:text-base text-gray-600">
               Kelola dan pantau hasil evaluasi kinerja karyawan berdasarkan jabatan
