@@ -19,9 +19,7 @@ export default function PerformancePage() {
   const [filterPosition, setFilterPosition] = useState<string>('all');
   const [filterBranch, setFilterBranch] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [, setStatistics] = useState<unknown>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-  const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddKnowledgeModal, setShowAddKnowledgeModal] = useState(false);
   const [newKnowledge, setNewKnowledge] = useState({ name: '', branch: '', score: 0 });
@@ -34,13 +32,11 @@ export default function PerformancePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [evaluationsData, stats, knowledgeData] = await Promise.all([
+      const [evaluationsData, knowledgeData] = await Promise.all([
         performanceService.getAllEvaluations(),
-        performanceService.getStatistics(),
         performanceService.getAllKnowledgeEntries()
       ]);
       setEvaluations(evaluationsData);
-      setStatistics(stats);
       setKnowledgeEntries(knowledgeData);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -49,51 +45,6 @@ export default function PerformancePage() {
     }
   };
 
-  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user?.email) return;
-
-    try {
-      setImporting(true);
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-
-      // Skip header row
-      const dataLines = lines.slice(1);
-
-      const entries = dataLines.map(line => {
-        const [name, branch, score] = line.split(',').map(s => s.trim());
-        return {
-          name,
-          branch,
-          score: parseFloat(score) || 0
-        };
-      }).filter(entry => entry.name && entry.branch);
-
-      if (entries.length === 0) {
-        alert('Tidak ada data valid dalam file CSV');
-        return;
-      }
-
-      const result = await performanceService.bulkCreateKnowledgeEntries(entries, user.email);
-
-      alert(`Import selesai!\nBerhasil: ${result.success}\nGagal: ${result.failed}`);
-
-      if (result.errors.length > 0) {
-        console.error('Import errors:', result.errors);
-      }
-
-      await loadData();
-    } catch (error) {
-      console.error('Error importing CSV:', error);
-      alert('Gagal mengimport file CSV');
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   const handleDeleteKnowledge = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
@@ -207,9 +158,11 @@ export default function PerformancePage() {
               {/* Logo & Title */}
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform p-1.5">
-                  <img
+                  <Image
                     src="/Logo Bpr.png"
                     alt="Logo BPR MAA"
+                    width={48}
+                    height={48}
                     className="w-full h-full object-contain"
                   />
                 </div>

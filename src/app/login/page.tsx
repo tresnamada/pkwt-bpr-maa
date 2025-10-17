@@ -81,9 +81,11 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
             <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform p-3">
-              <img
+              <Image
                 src="/Logo Bpr.png" 
                 alt="Logo BPR MAA" 
+                width={96}
+                height={96}
                 className="w-full h-full object-contain"
               />
             </div>

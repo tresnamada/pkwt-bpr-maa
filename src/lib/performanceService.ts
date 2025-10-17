@@ -236,9 +236,9 @@ class PerformanceService {
           evaluationDate: data.evaluationDate?.toDate() || new Date(),
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
-          editHistory: data.editHistory?.map((entry: any) => ({
+          editHistory: data.editHistory?.map((entry: { editedAt?: Timestamp; [key: string]: unknown }) => ({
             ...entry,
-            editedAt: entry.editedAt?.toDate() || new Date()
+            editedAt: (entry.editedAt as Timestamp)?.toDate() || new Date()
           })) || []
         };
       }) as PerformanceEvaluation[];
@@ -308,9 +308,9 @@ class PerformanceService {
           evaluationDate: data.evaluationDate?.toDate() || new Date(),
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
-          editHistory: data.editHistory?.map((entry: any) => ({
+          editHistory: data.editHistory?.map((entry: { editedAt?: Timestamp; [key: string]: unknown }) => ({
             ...entry,
-            editedAt: entry.editedAt?.toDate() || new Date()
+            editedAt: (entry.editedAt as Timestamp)?.toDate() || new Date()
           })) || []
         } as PerformanceEvaluation;
       }
@@ -372,17 +372,20 @@ class PerformanceService {
       const hasChanges = (historyEntry.changes && historyEntry.changes.length > 0) || 
                         historyEntry.oldNotes !== undefined;
 
-      const updateData: Record<string, any> = {
+      const updateData = {
         ...data,
         updatedAt: Timestamp.now()
       };
 
       if (hasChanges) {
         const currentHistory = currentData.editHistory || [];
-        updateData.editHistory = [...currentHistory, historyEntry];
+        await updateDoc(docRef, {
+          ...updateData,
+          editHistory: [...currentHistory, historyEntry]
+        });
+      } else {
+        await updateDoc(docRef, updateData);
       }
-
-      await updateDoc(docRef, updateData);
     } catch (error) {
       console.error('Error updating evaluation:', error);
       throw error;

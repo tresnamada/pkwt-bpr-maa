@@ -118,9 +118,11 @@ export default function DashboardPage() {
               {/* Logo & Title */}
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform p-1.5">
-                  <img
+                  <Image
                     src="/Logo Bpr.png" 
                     alt="Logo BPR MAA" 
+                    width={48}
+                    height={48}
                     className="w-full h-full object-contain"
                   />
                 </div>

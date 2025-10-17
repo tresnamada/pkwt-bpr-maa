@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { applicantService } from '@/lib/applicantService';
@@ -25,11 +25,7 @@ export default function ApplicantDetailPage() {
     keterangan: '',
   });
 
-  useEffect(() => {
-    loadApplicant();
-  }, [id]);
-
-  const loadApplicant = async () => {
+  const loadApplicant = useCallback(async () => {
     try {
       setLoading(true);
       const data = await applicantService.getApplicantById(id);
@@ -53,7 +49,11 @@ export default function ApplicantDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    loadApplicant();
+  }, [loadApplicant]);
 
   const handleSave = async () => {
     if (!formData.nama.trim() || !formData.sumberLamaran.trim() || !formData.keterangan.trim()) {

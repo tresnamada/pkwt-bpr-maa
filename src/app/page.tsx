@@ -33,9 +33,11 @@ export default function Home() {
           {/* Left Side - Hero Section */}
           <div className="text-center md:text-left space-y-6">
             <div className="inline-flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md">
-              <img 
+              <Image 
                 src="/Logo Bpr.png" 
                 alt="Logo BPR MAA" 
+                width={40}
+                height={40}
                 className="h-10 w-10 object-contain"
               />
               <span className="text-sm font-semibold text-gray-700">Bank BPR MAA</span>

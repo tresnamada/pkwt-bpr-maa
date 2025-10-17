@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +11,6 @@ import LogoutButton from '@/components/LogoutButton';
 import Image from 'next/image';
 
 export default function EmployeePerformanceDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
   const [evaluation, setEvaluation] = useState<PerformanceEvaluation | null>(null);
@@ -23,11 +22,7 @@ export default function EmployeePerformanceDetailPage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  useEffect(() => {
-    loadEvaluation();
-  }, [params.id]);
-
-  const loadEvaluation = async () => {
+  const loadEvaluation = useCallback(async () => {
     try {
       setLoading(true);
       const data = await performanceService.getEvaluationById(params.id as string);
@@ -48,7 +43,11 @@ export default function EmployeePerformanceDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    loadEvaluation();
+  }, [loadEvaluation]);
 
   const handleStartEdit = () => {
     setIsEditing(true);

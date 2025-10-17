@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { applicantService } from '@/lib/applicantService';
@@ -15,11 +15,7 @@ export default function ApplicantsPage() {
   const [filter, setFilter] = useState<ApplicantFilter>({});
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, [filter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [applicantsData, statsData] = await Promise.all([
@@ -34,7 +30,11 @@ export default function ApplicantsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSearch = () => {
     setFilter({ ...filter, search: searchTerm });
