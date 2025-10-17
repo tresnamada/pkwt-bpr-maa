@@ -14,7 +14,7 @@ import NotificationPanel from '@/components/NotificationPanel';
 import LogoutButton from '@/components/LogoutButton';
 import Image from 'next/image';
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -161,6 +161,17 @@ export default function DashboardPage() {
                   </svg>
                   Testing
                 </Link>
+                {isSuperAdmin && (
+                  <Link
+                    href="/branch-admin-management"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Admin Cabang
+                  </Link>
+                )}
                 <NotificationPanel 
                   onNotificationClick={(notification) => {
                     const employee = employees.find(emp => emp.id === notification.employeeId);
@@ -210,6 +221,14 @@ export default function DashboardPage() {
                 >
                   Testing Cron Job
                 </Link>
+                {isSuperAdmin && (
+                  <Link
+                    href="/branch-admin-management"
+                    className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
+                  >
+                    Admin Cabang
+                  </Link>
+                )}
                 <div className="px-4 py-3 mt-2 border-t border-gray-200">
                   <p className="text-sm font-medium text-gray-900">{user?.email}</p>
                   <p className="text-xs text-gray-500">Administrator</p>

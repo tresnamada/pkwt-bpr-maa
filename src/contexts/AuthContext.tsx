@@ -11,14 +11,20 @@ import {
   AuthError
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { adminService } from '@/lib/adminService';
+import { BranchAdmin } from '@/types/admin';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+  adminData: BranchAdmin | null;
+  isSuperAdmin: boolean;
+  userBranch: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  refreshAdminData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adminData, setAdminData] = useState<BranchAdmin | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [userBranch, setUserBranch] = useState<string | null>(null);
 
   // Set persistence to LOCAL (survives browser restart)
   useEffect(() => {
@@ -35,11 +44,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Function to load admin data
+  const loadAdminData = async (userEmail: string) => {
+    try {
+      const admin = await adminService.getBranchAdminByEmail(userEmail);
+      setAdminData(admin);
+      setIsSuperAdmin(admin?.role === 'super_admin');
+      setUserBranch(admin?.branch || null);
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+      setAdminData(null);
+      setIsSuperAdmin(false);
+      setUserBranch(null);
+    }
+  };
+
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, 
-      (user) => {
+      async (user) => {
         setUser(user);
+        if (user?.email) {
+          await loadAdminData(user.email);
+        } else {
+          setAdminData(null);
+          setIsSuperAdmin(false);
+          setUserBranch(null);
+        }
         setLoading(false);
         setError(null);
       },
@@ -106,13 +137,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
   };
 
+  // Refresh admin data
+  const refreshAdminData = async () => {
+    if (user?.email) {
+      await loadAdminData(user.email);
+    }
+  };
+
   const value = {
     user,
     loading,
     error,
+    adminData,
+    isSuperAdmin,
+    userBranch,
     login,
     logout,
     clearError,
+    refreshAdminData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

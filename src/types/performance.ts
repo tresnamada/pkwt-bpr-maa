@@ -67,7 +67,10 @@ export interface KnowledgeEntry {
   id: string;
   name: string;
   branch: string;
-  score: number;
+  score: number; // Kept for backward compatibility
+  tw1?: number;
+  tw2?: number;
+  tw3?: number;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;
@@ -76,5 +79,8 @@ export interface KnowledgeEntry {
 export interface CreateKnowledgeData {
   name: string;
   branch: string;
-  score: number;
+  score: number; // Kept for backward compatibility
+  tw1?: number;
+  tw2?: number;
+  tw3?: number;
 }

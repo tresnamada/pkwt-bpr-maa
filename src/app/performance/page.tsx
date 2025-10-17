@@ -10,7 +10,7 @@ import LogoutButton from '@/components/LogoutButton';
 import Image from 'next/image';
 
 export default function PerformancePage() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin, userBranch } = useAuth();
   const [activeTab, setActiveTab] = useState<'evaluation' | 'knowledge'>('evaluation');
   const [evaluations, setEvaluations] = useState<PerformanceEvaluation[]>([]);
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
@@ -22,8 +22,10 @@ export default function PerformancePage() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddKnowledgeModal, setShowAddKnowledgeModal] = useState(false);
-  const [newKnowledge, setNewKnowledge] = useState({ name: '', branch: '', score: 0 });
+  const [newKnowledge, setNewKnowledge] = useState({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
   const [savingKnowledge, setSavingKnowledge] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadData();
@@ -59,8 +61,18 @@ export default function PerformancePage() {
   };
 
   const handleAddKnowledge = async () => {
-    if (!newKnowledge.name || !newKnowledge.branch || newKnowledge.score < 0 || newKnowledge.score > 100) {
-      alert('Mohon lengkapi semua data dengan benar. Nilai harus antara 0-100.');
+    // For branch admin, use their branch; for super admin, use input branch
+    const branchToUse = isSuperAdmin ? newKnowledge.branch : (userBranch || '');
+    
+    if (!newKnowledge.name || !branchToUse) {
+      alert('Mohon lengkapi nama dan cabang.');
+      return;
+    }
+
+    if (newKnowledge.tw1 < 0 || newKnowledge.tw1 > 100 ||
+        newKnowledge.tw2 < 0 || newKnowledge.tw2 > 100 ||
+        newKnowledge.tw3 < 0 || newKnowledge.tw3 > 100) {
+      alert('Nilai TW harus antara 0-100.');
       return;
     }
 
@@ -71,16 +83,134 @@ export default function PerformancePage() {
 
     try {
       setSavingKnowledge(true);
-      await performanceService.createKnowledgeEntry(newKnowledge, user.email);
+      const knowledgeData = {
+        name: newKnowledge.name,
+        branch: branchToUse,
+        score: newKnowledge.tw1, // Use TW1 as main score
+        tw1: newKnowledge.tw1,
+        tw2: newKnowledge.tw2,
+        tw3: newKnowledge.tw3
+      };
+      await performanceService.createKnowledgeEntry(knowledgeData, user.email);
       alert('Data karyawan berhasil ditambahkan!');
       setShowAddKnowledgeModal(false);
-      setNewKnowledge({ name: '', branch: '', score: 0 });
+      setNewKnowledge({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
       await loadData();
     } catch (error) {
       console.error('Error adding knowledge:', error);
       alert('Gagal menambahkan data karyawan');
     } finally {
       setSavingKnowledge(false);
+    }
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!user?.email) {
+      alert('User tidak ditemukan');
+      return;
+    }
+
+    try {
+      setImporting(true);
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        alert('File CSV kosong atau tidak valid');
+        return;
+      }
+
+      // Parse CSV - skip header row (line 0 and 1)
+      const entries = [];
+      for (let i = 2; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Split by semicolon and handle quoted values
+        const values = line.split(';').map(v => v.trim().replace(/^"|"$/g, ''));
+        
+        // CSV structure: Nama;KC;TW3;TW2;TW1
+        // Index:         0    1   2   3   4
+        if (values.length >= 2) {
+          const name = values[0];
+          const branch = values[1];
+          
+          // Skip if name or branch is empty
+          if (!name || !branch) continue;
+          
+          // Parse scores, handle comma decimal and 0 values
+          const parseTWScore = (str: string): number => {
+            if (!str || str.trim() === '') return 0;
+            const parsed = parseFloat(str.replace(',', '.'));
+            return isNaN(parsed) ? 0 : parsed;
+          };
+          
+          // Get TW scores (may not exist for all rows)
+          const tw3 = values.length > 2 ? parseTWScore(values[2]) : 0;
+          const tw2 = values.length > 3 ? parseTWScore(values[3]) : 0;
+          const tw1 = values.length > 4 ? parseTWScore(values[4]) : 0;
+          
+          // Use TW1 as main score for backward compatibility
+          entries.push({
+            name: name,
+            branch: branch,
+            score: tw1,
+            tw1: tw1,
+            tw2: tw2,
+            tw3: tw3
+          });
+        }
+      }
+
+      if (entries.length === 0) {
+        alert('Tidak ada data valid yang ditemukan dalam file CSV');
+        return;
+      }
+
+      // Debug: Log first few entries to check parsing
+      console.log('Sample entries:', entries.slice(0, 3));
+      console.log('Total entries:', entries.length);
+
+      const clearFirst = confirm(
+        `Ditemukan ${entries.length} data karyawan.\n\nApakah Anda ingin MENGHAPUS semua data lama sebelum import?\n\nKlik OK untuk hapus data lama + import baru\nKlik Cancel untuk hanya import (data lama tetap ada)`
+      );
+
+      if (clearFirst) {
+        try {
+          await performanceService.deleteAllKnowledgeEntries();
+          console.log('Old data cleared');
+        } catch (error) {
+          console.error('Error clearing old data:', error);
+          alert('Gagal menghapus data lama. Import dibatalkan.');
+          return;
+        }
+      }
+
+      const result = await performanceService.bulkCreateKnowledgeEntries(entries, user.email);
+      
+      if (result.failed > 0) {
+        alert(
+          `Import selesai!\n\nBerhasil: ${result.success}\nGagal: ${result.failed}\n\nPeriksa console untuk detail error.`
+        );
+        console.error('Import errors:', result.errors);
+      } else {
+        alert(`Berhasil mengimport ${result.success} data karyawan!`);
+      }
+
+      await loadData();
+      
+      // Reset file input
+      if (csvInputRef.current) {
+        csvInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      alert('Gagal mengimport file CSV: ' + error);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -137,6 +267,7 @@ export default function PerformancePage() {
       e.unit.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+  // Filter knowledge based on branch filter and search
   const filteredKnowledge = knowledgeEntries
     .filter(k => filterBranch === 'all' || k.branch === filterBranch)
     .filter(k =>
@@ -695,24 +826,44 @@ export default function PerformancePage() {
                   <select
                     value={filterBranch}
                     onChange={(e) => setFilterBranch(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
                   >
                     <option value="all">Semua Cabang</option>
-                    {branches.map(branch => (
+                    {branches.sort().map(branch => (
                       <option key={branch} value={branch}>{branch}</option>
                     ))}
                   </select>
                 </div>
 
-                <button
-                  onClick={() => setShowAddKnowledgeModal(true)}
-                  className="group flex items-center justify-center space-x-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all w-full sm:w-auto"
-                >
-                  <svg className="h-5 w-5 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Tambah Karyawan</span>
-                </button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setShowAddKnowledgeModal(true)}
+                    className="group flex items-center justify-center space-x-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex-1 sm:flex-initial"
+                  >
+                    <svg className="h-5 w-5 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Tambah Karyawan</span>
+                  </button>
+                  
+                  <input
+                    ref={csvInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => csvInputRef.current?.click()}
+                    disabled={importing}
+                    className="group flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex-1 sm:flex-initial"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>{importing ? 'Mengimport...' : 'Import CSV'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Knowledge Table */}
@@ -738,7 +889,9 @@ export default function PerformancePage() {
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">No</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nama</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Cabang</th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nilai</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">TW 1</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">TW 2</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">TW 3</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tanggal</th>
                           <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Aksi</th>
                         </tr>
@@ -760,19 +913,32 @@ export default function PerformancePage() {
                                 {entry.branch}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-16 h-2 rounded-full bg-gray-200 overflow-hidden`}>
-                                  <div
-                                    className={`h-full ${entry.score >= 80 ? 'bg-green-500' :
-                                        entry.score >= 60 ? 'bg-blue-500' :
-                                          entry.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                                      }`}
-                                    style={{ width: `${entry.score}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm font-bold text-gray-900">{entry.score}</span>
-                              </div>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`px-3 py-1 text-sm font-bold rounded-lg ${
+                                (entry.tw1 || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                                (entry.tw1 || 0) >= 60 ? 'bg-blue-100 text-blue-800' :
+                                (entry.tw1 || 0) >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {entry.tw1 || 0}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`px-3 py-1 text-sm font-bold rounded-lg ${
+                                (entry.tw2 || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                                (entry.tw2 || 0) >= 60 ? 'bg-blue-100 text-blue-800' :
+                                (entry.tw2 || 0) >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {entry.tw2 || 0}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`px-3 py-1 text-sm font-bold rounded-lg ${
+                                (entry.tw3 || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                                (entry.tw3 || 0) >= 60 ? 'bg-blue-100 text-blue-800' :
+                                (entry.tw3 || 0) >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {entry.tw3 || 0}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {new Date(entry.createdAt).toLocaleDateString('id-ID', {
@@ -817,7 +983,7 @@ export default function PerformancePage() {
                 <button
                   onClick={() => {
                     setShowAddKnowledgeModal(false);
-                    setNewKnowledge({ name: '', branch: '', score: 0 });
+                    setNewKnowledge({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -845,39 +1011,63 @@ export default function PerformancePage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Cabang <span className="text-red-600">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={newKnowledge.branch}
-                    onChange={(e) => setNewKnowledge({ ...newKnowledge, branch: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Masukkan nama cabang"
-                  />
+                  {isSuperAdmin ? (
+                    <input
+                      type="text"
+                      value={newKnowledge.branch}
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, branch: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Masukkan nama cabang"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-700 font-medium">
+                      {userBranch || 'Cabang Anda'}
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nilai (0-100) <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newKnowledge.score}
-                    onChange={(e) => setNewKnowledge({ ...newKnowledge, score: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Masukkan nilai (0-100)"
-                  />
-                  <div className="mt-2">
-                    <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          newKnowledge.score >= 80 ? 'bg-green-500' :
-                          newKnowledge.score >= 60 ? 'bg-blue-500' :
-                          newKnowledge.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min(100, Math.max(0, newKnowledge.score))}%` }}
-                      ></div>
-                    </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      TW 1 <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newKnowledge.tw1}
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, tw1: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="0-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      TW 2 <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newKnowledge.tw2}
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, tw2: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="0-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      TW 3 <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newKnowledge.tw3}
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, tw3: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="0-100"
+                    />
                   </div>
                 </div>
               </div>
@@ -886,7 +1076,7 @@ export default function PerformancePage() {
                 <button
                   onClick={() => {
                     setShowAddKnowledgeModal(false);
-                    setNewKnowledge({ name: '', branch: '', score: 0 });
+                    setNewKnowledge({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
                   }}
                   className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
                   disabled={savingKnowledge}

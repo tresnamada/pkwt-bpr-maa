@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { adminService } from '@/lib/adminService';
 import { useRouter } from 'next/navigation';
 
 export default function SetupAdminPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [branch, setBranch] = useState('Pusat');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -31,7 +33,17 @@ export default function SetupAdminPage() {
     setError('');
 
     try {
+      // Create Firebase auth user
       await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Create super admin record in Firestore
+      await adminService.createBranchAdmin(
+        email,
+        branch,
+        'super_admin',
+        'system'
+      );
+      
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
@@ -73,10 +85,12 @@ export default function SetupAdminPage() {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-green-800">
-                  Admin berhasil dibuat!
+                  Super Admin berhasil dibuat!
                 </h3>
                 <div className="mt-2 text-sm text-green-700">
-                  <p>Anda akan diarahkan ke halaman login...</p>
+                  <p>Email: <strong>{email}</strong></p>
+                  <p>Role: <strong>Super Admin</strong></p>
+                  <p className="mt-2">Anda akan diarahkan ke halaman login...</p>
                 </div>
               </div>
             </div>
@@ -91,10 +105,10 @@ export default function SetupAdminPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Setup Admin PKWT
+            Setup Super Admin
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Buat akun admin pertama untuk sistem PKWT BPR MAA
+            Buat akun Super Admin pertama untuk sistem PKWT BPR MAA
           </p>
         </div>
 
@@ -107,8 +121,8 @@ export default function SetupAdminPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Penting:</strong> Halaman ini hanya untuk setup admin pertama. 
-                Setelah admin dibuat, akses halaman ini sebaiknya dinonaktifkan.
+                <strong>Penting:</strong> Halaman ini hanya untuk setup Super Admin pertama. 
+                Super Admin memiliki akses penuh ke semua fitur termasuk manajemen admin cabang.
               </p>
             </div>
           </div>
@@ -166,6 +180,25 @@ export default function SetupAdminPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
+
+            <div>
+              <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
+                Nama Cabang/Unit
+              </label>
+              <input
+                id="branch"
+                name="branch"
+                type="text"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Contoh: Pusat, Kantor Pusat"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Super Admin dapat melihat dan mengelola semua cabang
+              </p>
+            </div>
           </div>
 
           {error && (
@@ -180,7 +213,7 @@ export default function SetupAdminPage() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Membuat Admin...' : 'Buat Admin'}
+              {loading ? 'Membuat Super Admin...' : 'Buat Super Admin'}
             </button>
           </div>
 
