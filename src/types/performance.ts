@@ -18,6 +18,19 @@ export interface PositionTemplate {
   questions: PerformanceQuestion[];
 }
 
+export interface EvaluationHistoryEntry {
+  editedAt: Date;
+  editedBy: string;
+  changes: {
+    questionId: string;
+    question: string;
+    oldRating: RatingLevel;
+    newRating: RatingLevel;
+  }[];
+  oldNotes?: string;
+  newNotes?: string;
+}
+
 export interface PerformanceEvaluation {
   id: string;
   employeeId: string;
@@ -34,6 +47,7 @@ export interface PerformanceEvaluation {
   evaluatedBy: string;
   createdAt: Date;
   updatedAt: Date;
+  editHistory?: EvaluationHistoryEntry[];
 }
 
 export interface CreatePerformanceEvaluationData {
@@ -47,4 +61,20 @@ export interface CreatePerformanceEvaluationData {
     rating: RatingLevel;
   }[];
   overallNotes: string;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  name: string;
+  branch: string;
+  score: number;
+  createdAt: Date;
+  createdBy: string;
+  updatedAt: Date;
+}
+
+export interface CreateKnowledgeData {
+  name: string;
+  branch: string;
+  score: number;
 }

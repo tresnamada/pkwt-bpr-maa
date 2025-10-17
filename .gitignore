@@ -45,4 +45,5 @@ firebase-service-account.json
 *service-account*.json
 check-data.js
 import-csv-to-firebase.js
+import-knowledge-csv.js
 deleteCollection.js

@@ -15,10 +15,15 @@ import {
 import { 
   PerformanceEvaluation, 
   CreatePerformanceEvaluationData,
-  PositionTemplate 
+  PositionTemplate,
+  EvaluationHistoryEntry,
+  RatingLevel,
+  KnowledgeEntry,
+  CreateKnowledgeData
 } from '@/types/performance';
 
 const COLLECTION_NAME = 'performanceEvaluations';
+const KNOWLEDGE_COLLECTION = 'knowledgeEntries';
 
 
 export const positionTemplates: PositionTemplate[] = [
@@ -223,13 +228,20 @@ class PerformanceService {
       );
       const querySnapshot = await getDocs(q);
       
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        evaluationDate: doc.data().evaluationDate?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as PerformanceEvaluation[];
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          evaluationDate: data.evaluationDate?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          editHistory: data.editHistory?.map((entry: any) => ({
+            ...entry,
+            editedAt: entry.editedAt?.toDate() || new Date()
+          })) || []
+        };
+      }) as PerformanceEvaluation[];
     } catch (error) {
       console.error('Error getting evaluations:', error);
       throw error;
@@ -289,12 +301,17 @@ class PerformanceService {
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
+        const data = docSnap.data();
         return {
           id: docSnap.id,
-          ...docSnap.data(),
-          evaluationDate: docSnap.data().evaluationDate?.toDate() || new Date(),
-          createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-          updatedAt: docSnap.data().updatedAt?.toDate() || new Date()
+          ...data,
+          evaluationDate: data.evaluationDate?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          editHistory: data.editHistory?.map((entry: any) => ({
+            ...entry,
+            editedAt: entry.editedAt?.toDate() || new Date()
+          })) || []
         } as PerformanceEvaluation;
       }
       
@@ -305,17 +322,67 @@ class PerformanceService {
     }
   }
 
-  // Update evaluation
+  // Update evaluation with history tracking
   async updateEvaluation(
     id: string,
-    data: Partial<CreatePerformanceEvaluationData>
+    data: Partial<CreatePerformanceEvaluationData>,
+    editedBy: string
   ): Promise<void> {
     try {
       const docRef = doc(db, COLLECTION_NAME, id);
-      await updateDoc(docRef, {
+      const currentDoc = await getDoc(docRef);
+      
+      if (!currentDoc.exists()) {
+        throw new Error('Evaluation not found');
+      }
+
+      const currentData = currentDoc.data() as PerformanceEvaluation;
+      const historyEntry: Partial<EvaluationHistoryEntry> = {
+        editedAt: Timestamp.now() as unknown as Date,
+        editedBy,
+        changes: []
+      };
+
+      // Track question rating changes
+      if (data.questions) {
+        const changes: EvaluationHistoryEntry['changes'] = [];
+        data.questions.forEach((newQuestion) => {
+          const oldQuestion = currentData.questions.find(
+            q => q.questionId === newQuestion.questionId
+          );
+          if (oldQuestion && oldQuestion.rating !== newQuestion.rating) {
+            changes.push({
+              questionId: newQuestion.questionId,
+              question: newQuestion.question,
+              oldRating: oldQuestion.rating as RatingLevel,
+              newRating: newQuestion.rating as RatingLevel
+            });
+          }
+        });
+        historyEntry.changes = changes;
+      }
+
+      // Track notes changes
+      if (data.overallNotes !== undefined && data.overallNotes !== currentData.overallNotes) {
+        historyEntry.oldNotes = currentData.overallNotes;
+        historyEntry.newNotes = data.overallNotes;
+      }
+
+      // Only add to history if there are actual changes
+      const hasChanges = (historyEntry.changes && historyEntry.changes.length > 0) || 
+                        historyEntry.oldNotes !== undefined;
+
+      const updateData: Record<string, any> = {
         ...data,
         updatedAt: Timestamp.now()
-      });
+      };
+
+      if (hasChanges) {
+        const currentHistory = currentData.editHistory || [];
+        updateData.editHistory = [...currentHistory, historyEntry];
+      }
+
+      await updateDoc(docRef, updateData);
     } catch (error) {
       console.error('Error updating evaluation:', error);
       throw error;
@@ -366,6 +433,136 @@ class PerformanceService {
       return stats;
     } catch (error) {
       console.error('Error getting statistics:', error);
+      throw error;
+    }
+  }
+
+  // ===== KNOWLEDGE METHODS =====
+
+  // Create single knowledge entry
+  async createKnowledgeEntry(
+    data: CreateKnowledgeData,
+    createdBy: string
+  ): Promise<string> {
+    try {
+      const knowledgeData = {
+        ...data,
+        createdBy,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+
+      const docRef = await addDoc(collection(db, KNOWLEDGE_COLLECTION), knowledgeData);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating knowledge entry:', error);
+      throw error;
+    }
+  }
+
+  // Bulk create knowledge entries from CSV
+  async bulkCreateKnowledgeEntries(
+    entries: CreateKnowledgeData[],
+    createdBy: string
+  ): Promise<{ success: number; failed: number; errors: string[] }> {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    for (const entry of entries) {
+      try {
+        await this.createKnowledgeEntry(entry, createdBy);
+        results.success++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push(`Failed to create entry for ${entry.name}: ${error}`);
+      }
+    }
+
+    return results;
+  }
+
+  // Get all knowledge entries
+  async getAllKnowledgeEntries(): Promise<KnowledgeEntry[]> {
+    try {
+      const q = query(
+        collection(db, KNOWLEDGE_COLLECTION),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+      })) as KnowledgeEntry[];
+    } catch (error) {
+      console.error('Error getting knowledge entries:', error);
+      throw error;
+    }
+  }
+
+  // Get knowledge entries by branch
+  async getKnowledgeEntriesByBranch(branch: string): Promise<KnowledgeEntry[]> {
+    try {
+      const q = query(
+        collection(db, KNOWLEDGE_COLLECTION),
+        where('branch', '==', branch),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+      })) as KnowledgeEntry[];
+    } catch (error) {
+      console.error('Error getting knowledge entries by branch:', error);
+      throw error;
+    }
+  }
+
+  // Update knowledge entry
+  async updateKnowledgeEntry(
+    id: string,
+    data: Partial<CreateKnowledgeData>
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, KNOWLEDGE_COLLECTION, id);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating knowledge entry:', error);
+      throw error;
+    }
+  }
+
+  // Delete knowledge entry
+  async deleteKnowledgeEntry(id: string): Promise<void> {
+    try {
+      const docRef = doc(db, KNOWLEDGE_COLLECTION, id);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting knowledge entry:', error);
+      throw error;
+    }
+  }
+
+  // Delete all knowledge entries (for clearing before bulk import)
+  async deleteAllKnowledgeEntries(): Promise<void> {
+    try {
+      const querySnapshot = await getDocs(collection(db, KNOWLEDGE_COLLECTION));
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error deleting all knowledge entries:', error);
       throw error;
     }
   }

@@ -59,7 +59,7 @@ export default function AddPerformanceEvaluationPage() {
       setSubmitting(true);
 
       const evaluationData = {
-        employeeId: `manual-${Date.now()}`, // Generate ID for manual entry
+        employeeId: `manual-${Date.now()}`,
         employeeName: employeeName.trim(),
         position: selectedPosition,
         unit: employeeUnit.trim(),
@@ -102,7 +102,7 @@ export default function AddPerformanceEvaluationPage() {
               {/* Logo & Title */}
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform p-1.5">
-                  <Image
+                  <img
                     src="/Logo Bpr.png" 
                     alt="Logo BPR MAA" 
                     className="w-full h-full object-contain"
