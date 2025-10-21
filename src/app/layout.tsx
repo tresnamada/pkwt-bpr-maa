@@ -26,8 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id"
-    link rel="icon" href="/Logo Bpr.png"
+    
     >
+    <link rel="icon" href="/Logo Bpr.png" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
