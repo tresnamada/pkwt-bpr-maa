@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAlert } from '@/contexts/AlertContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LogoutButton() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { showError, showConfirm } = useAlert();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -18,10 +20,10 @@ export default function LogoutButton() {
     } catch (error: unknown) {
       const err = error as Error;
       console.error('Logout error:', error);
-      alert(err.message || 'Gagal logout');
+      showError(err.message || 'Gagal logout');
     } finally {
       setIsLoggingOut(false);
-      setShowConfirm(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -33,16 +35,16 @@ export default function LogoutButton() {
       <div className="flex items-center gap-4">
         <UserInfo email={user.email || ''} />
         <LogoutTriggerButton 
-          onClick={() => setShowConfirm(true)} 
+          onClick={() => setShowConfirmModal(true)} 
           disabled={isLoggingOut} 
         />
       </div>
 
       {/* Confirmation Modal */}
-      {showConfirm && (
+      {showConfirmModal && (
         <ConfirmationModal
           isLoggingOut={isLoggingOut}
-          onCancel={() => setShowConfirm(false)}
+          onCancel={() => setShowConfirmModal(false)}
           onConfirm={handleLogout}
         />
       )}

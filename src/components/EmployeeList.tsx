@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAlert } from '@/contexts/AlertContext';
 import { Employee } from '@/types/employee';
 import { employeeService } from '@/lib/employeeService';
 
@@ -11,18 +12,23 @@ interface EmployeeListProps {
 }
 
 export default function EmployeeList({ employees, onEvaluate, onRefresh }: EmployeeListProps) {
+  const { showSuccess, showError, showConfirm } = useAlert();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleDelete = async (employeeId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
-      try {
-        await employeeService.deleteEmployee(employeeId);
-        onRefresh();
-      } catch (error) {
-        console.error('Error deleting employee:', error);
-        alert('Gagal menghapus karyawan');
+    showConfirm(
+      `Yakin ingin menghapus ${employee.name}?`,
+      async () => {
+        try {
+          await employeeService.deleteEmployee(employeeId);
+          showSuccess('Karyawan berhasil dihapus');
+          onRefresh();
+        } catch (error) {
+          console.error('Error deleting employee:', error);
+          showError('Gagal menghapus karyawan');
+        }
       }
-    }
+    );
   };
 
   const getStatusBadge = (status: string) => {

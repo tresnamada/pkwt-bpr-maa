@@ -25,7 +25,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id"
+    link rel="icon" href="/Logo Bpr.png"
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

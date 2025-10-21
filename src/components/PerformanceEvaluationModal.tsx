@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { performanceService } from '@/lib/performanceService';
+import { useAlert } from '@/contexts/AlertContext';
 import { Employee } from '@/types/employee';
+import { performanceService } from '@/lib/performanceService';
 import { RatingLevel, PositionTemplate } from '@/types/performance';
 
 interface PerformanceEvaluationModalProps {
@@ -18,6 +19,7 @@ export default function PerformanceEvaluationModal({
   employees
 }: PerformanceEvaluationModalProps) {
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useAlert();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [template, setTemplate] = useState<PositionTemplate | null>(null);
@@ -48,14 +50,14 @@ export default function PerformanceEvaluationModal({
     e.preventDefault();
     
     if (!selectedEmployee || !template || !user?.email) {
-      alert('Mohon lengkapi semua data');
+      showWarning('Mohon lengkapi semua data');
       return;
     }
 
     // Validate all questions have ratings
     const allQuestionsRated = template.questions.every(question => questionRatings[question.id]);
     if (!allQuestionsRated) {
-      alert('Mohon berikan penilaian untuk semua pertanyaan');
+      showWarning('Mohon berikan penilaian untuk semua pertanyaan');
       return;
     }
 
@@ -76,10 +78,11 @@ export default function PerformanceEvaluationModal({
       };
 
       await performanceService.createEvaluation(evaluationData, user.email);
+      showSuccess('Evaluasi berhasil disimpan!');
       onSubmitted();
     } catch (error) {
       console.error('Error submitting evaluation:', error);
-      alert('Gagal menyimpan evaluasi. Silakan coba lagi.');
+      showError('Gagal menyimpan evaluasi. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }

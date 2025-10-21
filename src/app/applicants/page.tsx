@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAlert } from '@/contexts/AlertContext';
 import { applicantService } from '@/lib/applicantService';
 import { Applicant, ApplicantFilter, ApplicantStats, HasilAkhir } from '@/types/applicant';
 import Link from 'next/link';
 
 export default function ApplicantsPage() {
   const router = useRouter();
+  const { showSuccess, showError, showConfirm } = useAlert();
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [stats, setStats] = useState<ApplicantStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function ApplicantsPage() {
       setStats(statsData);
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Gagal memuat data');
+      showError('Gagal memuat data');
     } finally {
       setLoading(false);
     }
@@ -41,16 +43,19 @@ export default function ApplicantsPage() {
   };
 
   const handleDelete = async (id: string, nama: string) => {
-    if (!confirm(`Yakin ingin menghapus data ${nama}?`)) return;
-
-    try {
-      await applicantService.deleteApplicant(id);
-      alert('Data berhasil dihapus');
-      loadData();
-    } catch (error) {
-      console.error('Error deleting applicant:', error);
-      alert('Gagal menghapus data');
-    }
+    showConfirm(
+      `Yakin ingin menghapus data ${nama}?`,
+      async () => {
+        try {
+          await applicantService.deleteApplicant(id);
+          showSuccess('Data berhasil dihapus');
+          loadData();
+        } catch (error) {
+          console.error('Error deleting applicant:', error);
+          showError('Gagal menghapus data');
+        }
+      }
+    );
   };
 
   const getHasilBadgeClass = (hasil: HasilAkhir) => {
@@ -87,12 +92,6 @@ export default function ApplicantsPage() {
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   ← Dashboard
-                </Link>
-                <Link
-                  href="/applicants/add"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                >
-                  + Tambah Pelamar
                 </Link>
               </div>
             </div>
@@ -225,7 +224,15 @@ export default function ApplicantsPage() {
               </div>
 
               {/* Reset */}
-              <div className="flex items-end">
+              <div className="gap-2">
+                <button className='w-full px-12 py-4 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700'>
+                  <Link
+                    href="/applicants/add"
+                    className=""
+                  >
+                    + Tambah Pelamar
+                  </Link>
+                </button>
                 <button
                   onClick={() => {
                     setFilter({});

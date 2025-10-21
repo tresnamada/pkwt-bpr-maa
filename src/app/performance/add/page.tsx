@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { performanceService } from '@/lib/performanceService';
 import { RatingLevel, PositionTemplate } from '@/types/performance';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -13,6 +14,7 @@ import Image from 'next/image';
 export default function AddPerformanceEvaluationPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useAlert();
   const [employeeName, setEmployeeName] = useState('');
   const [employeeUnit, setEmployeeUnit] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
@@ -44,14 +46,14 @@ export default function AddPerformanceEvaluationPage() {
     e.preventDefault();
     
     if (!employeeName.trim() || !employeeUnit.trim() || !template || !user?.email) {
-      alert('Mohon lengkapi semua data');
+      showWarning('Mohon lengkapi semua data');
       return;
     }
 
     // Validate all questions have ratings
     const allQuestionsRated = template.questions.every(question => questionRatings[question.id]);
     if (!allQuestionsRated) {
-      alert('Mohon berikan penilaian untuk semua pertanyaan');
+      showWarning('Mohon berikan penilaian untuk semua pertanyaan');
       return;
     }
 
@@ -72,11 +74,11 @@ export default function AddPerformanceEvaluationPage() {
       };
 
       await performanceService.createEvaluation(evaluationData, user.email);
-      alert('Evaluasi berhasil disimpan!');
+      showSuccess('Evaluasi berhasil disimpan!');
       router.push('/performance');
     } catch (error) {
       console.error('Error submitting evaluation:', error);
-      alert('Gagal menyimpan evaluasi. Silakan coba lagi.');
+      showError('Gagal menyimpan evaluasi. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }

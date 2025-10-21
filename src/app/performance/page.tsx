@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { performanceService } from '@/lib/performanceService';
 import { PerformanceEvaluation, KnowledgeEntry } from '@/types/performance';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -11,6 +12,7 @@ import Image from 'next/image';
 
 export default function PerformancePage() {
   const { user, isSuperAdmin, userBranch } = useAuth();
+  const { showSuccess, showError, showWarning, showConfirm } = useAlert();
   const [activeTab, setActiveTab] = useState<'evaluation' | 'knowledge'>('evaluation');
   const [evaluations, setEvaluations] = useState<PerformanceEvaluation[]>([]);
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
@@ -49,15 +51,19 @@ export default function PerformancePage() {
 
 
   const handleDeleteKnowledge = async (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-      try {
-        await performanceService.deleteKnowledgeEntry(id);
-        await loadData();
-      } catch (error) {
-        console.error('Error deleting knowledge:', error);
-        alert('Gagal menghapus data');
+    showConfirm(
+      'Apakah Anda yakin ingin menghapus data ini?',
+      async () => {
+        try {
+          await performanceService.deleteKnowledgeEntry(id);
+          await loadData();
+          showSuccess('Data berhasil dihapus');
+        } catch (error) {
+          console.error('Error deleting knowledge:', error);
+          showError('Gagal menghapus data');
+        }
       }
-    }
+    );
   };
 
   const handleAddKnowledge = async () => {
@@ -65,19 +71,19 @@ export default function PerformancePage() {
     const branchToUse = isSuperAdmin ? newKnowledge.branch : (userBranch || '');
     
     if (!newKnowledge.name || !branchToUse) {
-      alert('Mohon lengkapi nama dan cabang.');
+      showWarning('Mohon lengkapi nama dan cabang.');
       return;
     }
 
     if (newKnowledge.tw1 < 0 || newKnowledge.tw1 > 100 ||
         newKnowledge.tw2 < 0 || newKnowledge.tw2 > 100 ||
         newKnowledge.tw3 < 0 || newKnowledge.tw3 > 100) {
-      alert('Nilai TW harus antara 0-100.');
+      showWarning('Nilai TW harus antara 0-100.');
       return;
     }
 
     if (!user?.email) {
-      alert('User tidak ditemukan');
+      showError('User tidak ditemukan');
       return;
     }
 
@@ -92,151 +98,31 @@ export default function PerformancePage() {
         tw3: newKnowledge.tw3
       };
       await performanceService.createKnowledgeEntry(knowledgeData, user.email);
-      alert('Data karyawan berhasil ditambahkan!');
+      showSuccess('Data karyawan berhasil ditambahkan!');
       setShowAddKnowledgeModal(false);
       setNewKnowledge({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
       await loadData();
     } catch (error) {
       console.error('Error adding knowledge:', error);
-      alert('Gagal menambahkan data karyawan');
+      showError('Gagal menambahkan data karyawan');
     } finally {
       setSavingKnowledge(false);
     }
   };
-
-  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!user?.email) {
-      alert('User tidak ditemukan');
-      return;
-    }
-
-    try {
-      setImporting(true);
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        alert('File CSV kosong atau tidak valid');
-        return;
-      }
-
-      // Parse CSV - skip header row (line 0 and 1)
-      const entries = [];
-      for (let i = 2; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        // Split by semicolon and handle quoted values
-        const values = line.split(';').map(v => v.trim().replace(/^"|"$/g, ''));
-        
-        // CSV structure: Nama;KC;TW3;TW2;TW1
-        // Index:         0    1   2   3   4
-        if (values.length >= 2) {
-          const name = values[0];
-          const branch = values[1];
-          
-          // Skip if name or branch is empty
-          if (!name || !branch) continue;
-          
-          // Parse scores, handle comma decimal and 0 values
-          const parseTWScore = (str: string): number => {
-            if (!str || str.trim() === '') return 0;
-            const parsed = parseFloat(str.replace(',', '.'));
-            return isNaN(parsed) ? 0 : parsed;
-          };
-          
-          // Get TW scores (may not exist for all rows)
-          const tw3 = values.length > 2 ? parseTWScore(values[2]) : 0;
-          const tw2 = values.length > 3 ? parseTWScore(values[3]) : 0;
-          const tw1 = values.length > 4 ? parseTWScore(values[4]) : 0;
-          
-          // Use TW1 as main score for backward compatibility
-          entries.push({
-            name: name,
-            branch: branch,
-            score: tw1,
-            tw1: tw1,
-            tw2: tw2,
-            tw3: tw3
-          });
-        }
-      }
-
-      if (entries.length === 0) {
-        alert('Tidak ada data valid yang ditemukan dalam file CSV');
-        return;
-      }
-
-      // Debug: Log first few entries to check parsing
-      console.log('Sample entries:', entries.slice(0, 3));
-      console.log('Total entries:', entries.length);
-
-      const clearFirst = confirm(
-        `Ditemukan ${entries.length} data karyawan.\n\nApakah Anda ingin MENGHAPUS semua data lama sebelum import?\n\nKlik OK untuk hapus data lama + import baru\nKlik Cancel untuk hanya import (data lama tetap ada)`
-      );
-
-      if (clearFirst) {
-        try {
-          await performanceService.deleteAllKnowledgeEntries();
-          console.log('Old data cleared');
-        } catch (error) {
-          console.error('Error clearing old data:', error);
-          alert('Gagal menghapus data lama. Import dibatalkan.');
-          return;
-        }
-      }
-
-      const result = await performanceService.bulkCreateKnowledgeEntries(entries, user.email);
-      
-      if (result.failed > 0) {
-        alert(
-          `Import selesai!\n\nBerhasil: ${result.success}\nGagal: ${result.failed}\n\nPeriksa console untuk detail error.`
-        );
-        console.error('Import errors:', result.errors);
-      } else {
-        alert(`Berhasil mengimport ${result.success} data karyawan!`);
-      }
-
-      await loadData();
-      
-      // Reset file input
-      if (csvInputRef.current) {
-        csvInputRef.current.value = '';
-      }
-    } catch (error) {
-      console.error('Error importing CSV:', error);
-      alert('Gagal mengimport file CSV: ' + error);
-    } finally {
-      setImporting(false);
-    }
-  };
-
-
-  const toggleCard = (id: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
   const handleDeleteEvaluation = async (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus evaluasi ini?')) {
-      try {
-        await performanceService.deleteEvaluation(id);
-        loadData();
-      } catch (error) {
-        console.error('Error deleting evaluation:', error);
-        alert('Gagal menghapus evaluasi');
+    showConfirm(
+      'Apakah Anda yakin ingin menghapus evaluasi ini?',
+      async () => {
+        try {
+          await performanceService.deleteEvaluation(id);
+          loadData();
+          showSuccess('Evaluasi berhasil dihapus');
+        } catch (error) {
+          console.error('Error deleting evaluation:', error);
+          showError('Gagal menghapus evaluasi');
+        }
       }
-    }
+    );
   };
 
   const getRatingLabel = (rating: string) => {
@@ -562,75 +448,40 @@ export default function PerformancePage() {
                     >
                       {/* Card Header */}
                       <div
-                        onClick={() => toggleCard(evaluation.id)}
-                        className="p-4 md:p-5 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => {
+                          const newExpanded = new Set(expandedCards);
+                          if (isExpanded) {
+                            newExpanded.delete(evaluation.id);
+                          } else {
+                            newExpanded.add(evaluation.id);
+                          }
+                          setExpandedCards(newExpanded);
+                        }}
+                        className="px-4 md:px-5 py-4 md:py-5 cursor-pointer hover:bg-gray-50 transition-colors"
                       >
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                              <svg
-                                className="w-5 h-5 md:w-6 md:h-6 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                />
-                              </svg>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">
-                                {evaluation.employeeName}
-                              </h3>
-                              <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <span className="px-2.5 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                                  {evaluation.position}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm md:text-base font-bold">
+                                  {evaluation.employeeName.charAt(0).toUpperCase()}
                                 </span>
-                                <span className="px-2.5 py-0.5 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
-                                  {evaluation.unit}
-                                </span>
-                                <span className="text-xs text-gray-500 hidden sm:inline">
-                                  {new Date(evaluation.evaluationDate).toLocaleDateString(
-                                    'id-ID',
-                                    {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      year: 'numeric',
-                                    }
-                                  )}
-                                </span>
-                                {evaluation.editHistory &&
-                                  evaluation.editHistory.length > 0 && (
-                                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                                      <svg
-                                        className="w-3 h-3"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                      </svg>
-                                      {evaluation.editHistory.length} Edit
-                                    </span>
-                                  )}
+                              </div>
+                              <div>
+                                <h3 className="text-base md:text-lg font-bold text-gray-900">
+                                  {evaluation.employeeName}
+                                </h3>
+                                <p className="text-xs md:text-sm text-gray-500">
+                                  {evaluation.position} • {evaluation.unit}
+                                </p>
                               </div>
                             </div>
                           </div>
-
-                          {/* Expand Icon */}
-                          <div className="flex items-center gap-2">
+                          <button className="ml-4 p-2 hover:bg-gray-100 rounded-lg transition-colors">
                             <svg
-                              className={`w-5 h-5 md:w-6 md:h-6 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''
-                                }`}
+                              className={`w-5 h-5 md:w-6 md:h-6 text-gray-600 transition-transform ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -642,7 +493,7 @@ export default function PerformancePage() {
                                 d="M19 9l-7 7-7-7"
                               />
                             </svg>
-                          </div>
+                          </button>
                         </div>
                       </div>
 
@@ -846,23 +697,7 @@ export default function PerformancePage() {
                     <span>Tambah Karyawan</span>
                   </button>
                   
-                  <input
-                    ref={csvInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => csvInputRef.current?.click()}
-                    disabled={importing}
-                    className="group flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex-1 sm:flex-initial"
-                  >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span>{importing ? 'Mengimport...' : 'Import CSV'}</span>
-                  </button>
+                  
                 </div>
               </div>
 
@@ -976,7 +811,7 @@ export default function PerformancePage() {
 
         {/* Add Knowledge Modal */}
         {showAddKnowledgeModal && (
-          <div className="fixed inset-0 bg-opacity-100 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl md:text-2xl font-bold text-gray-900">Tambah Karyawan</h3>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { performanceService } from '@/lib/performanceService';
 import { PerformanceEvaluation, RatingLevel } from '@/types/performance';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -13,6 +14,7 @@ import Image from 'next/image';
 export default function EmployeePerformanceDetailPage() {
   const params = useParams();
   const { user } = useAuth();
+  const { showSuccess, showError } = useAlert();
   const [evaluation, setEvaluation] = useState<PerformanceEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +41,7 @@ export default function EmployeePerformanceDetailPage() {
       }
     } catch (error) {
       console.error('Error loading evaluation:', error);
-      alert('Gagal memuat data evaluasi');
+      showError('Gagal memuat data evaluasi');
     } finally {
       setLoading(false);
     }
@@ -87,12 +89,12 @@ export default function EmployeePerformanceDetailPage() {
         user.email
       );
 
-      alert('Evaluasi berhasil diperbarui!');
+      showSuccess('Evaluasi berhasil diperbarui!');
       setIsEditing(false);
       await loadEvaluation(); // Reload to get updated data with history
     } catch (error) {
       console.error('Error updating evaluation:', error);
-      alert('Gagal memperbarui evaluasi. Silakan coba lagi.');
+      showError('Gagal memperbarui evaluasi. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }

@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAlert } from '@/contexts/AlertContext';
 import { applicantService } from '@/lib/applicantService';
 import { HasilAkhir } from '@/types/applicant';
 
 export default function AddApplicantPage() {
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useAlert();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nama: '',
@@ -23,26 +25,26 @@ export default function AddApplicantPage() {
 
     // Validation
     if (!formData.nama.trim()) {
-      alert('Nama harus diisi');
+      showWarning('Nama harus diisi');
       return;
     }
     if (!formData.sumberLamaran.trim()) {
-      alert('Sumber lamaran harus diisi');
+      showWarning('Sumber lamaran harus diisi');
       return;
     }
     if (!formData.keterangan.trim()) {
-      alert('Keterangan harus diisi');
+      showWarning('Keterangan harus diisi');
       return;
     }
 
     try {
       setLoading(true);
       await applicantService.createApplicant(formData);
-      alert('Data pelamar berhasil ditambahkan');
+      showSuccess('Data pelamar berhasil ditambahkan');
       router.push('/applicants');
     } catch (error) {
       console.error('Error creating applicant:', error);
-      alert('Gagal menambahkan data pelamar');
+      showError('Gagal menambahkan data pelamar');
     } finally {
       setLoading(false);
     }

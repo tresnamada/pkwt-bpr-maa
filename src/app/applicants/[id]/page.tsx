@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAlert } from '@/contexts/AlertContext';
 import { applicantService } from '@/lib/applicantService';
 import { Applicant, HasilAkhir } from '@/types/applicant';
 
@@ -10,6 +11,7 @@ export default function ApplicantDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { showSuccess, showError, showWarning } = useAlert();
 
   const [applicant, setApplicant] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,12 +42,12 @@ export default function ApplicantDetailPage() {
           keterangan: data.keterangan,
         });
       } else {
-        alert('Data tidak ditemukan');
+        showError('Data tidak ditemukan');
         router.push('/applicants');
       }
     } catch (error) {
       console.error('Error loading applicant:', error);
-      alert('Gagal memuat data');
+      showError('Gagal memuat data');
     } finally {
       setLoading(false);
     }
@@ -57,19 +59,19 @@ export default function ApplicantDetailPage() {
 
   const handleSave = async () => {
     if (!formData.nama.trim() || !formData.sumberLamaran.trim() || !formData.keterangan.trim()) {
-      alert('Semua field harus diisi');
+      showWarning('Semua field harus diisi');
       return;
     }
 
     try {
       setSaving(true);
       await applicantService.updateApplicant(id, formData);
-      alert('Data berhasil diupdate');
+      showSuccess('Data berhasil diupdate');
       setEditing(false);
       loadApplicant();
     } catch (error) {
       console.error('Error updating applicant:', error);
-      alert('Gagal mengupdate data');
+      showError('Gagal mengupdate data');
     } finally {
       setSaving(false);
     }

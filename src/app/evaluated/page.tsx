@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAlert } from '@/contexts/AlertContext';
 import { employeeService } from '@/lib/employeeService';
 import { Employee } from '@/types/employee';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import LogoutButton from '@/components/LogoutButton';
 
 export default function EvaluatedEmployeesPage() {
+  const router = useRouter();
+  const { showSuccess, showError, showWarning, showConfirm } = useAlert();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,22 +71,23 @@ export default function EvaluatedEmployeesPage() {
   };
 
   const handleDeleteEmployee = async (employeeId: string, employeeName: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus data ${employeeName}? Tindakan ini tidak dapat dibatalkan.`)) {
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      await employeeService.deleteEmployee(employeeId);
-      await loadEvaluatedEmployees();
-      alert(`Data ${employeeName} berhasil dihapus`);
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error('Error deleting employee:', error);
-      alert(`Gagal menghapus data: ${err.message}`);
-    } finally {
-      setDeleting(false);
-    }
+    showConfirm(
+      `Yakin ingin menghapus data ${employeeName}?`,
+      async () => {
+        setDeleting(true);
+        try {
+          await employeeService.deleteEmployee(employeeId);
+          await loadEvaluatedEmployees();
+          showSuccess(`Data ${employeeName} berhasil dihapus`);
+        } catch (error: unknown) {
+          const err = error as Error;
+          console.error('Error deleting employee:', error);
+          showError(`Gagal menghapus data: ${err.message}`);
+        } finally {
+          setDeleting(false);
+        }
+      }
+    );
   };
 
   const toggleSelectEmployee = (employeeId: string) => {
@@ -97,28 +102,29 @@ export default function EvaluatedEmployeesPage() {
 
   const handleBulkDelete = async () => {
     if (selectedForDelete.size === 0) {
-      alert('Pilih minimal 1 karyawan untuk dihapus');
+      showWarning('Pilih minimal 1 karyawan untuk dihapus');
       return;
     }
 
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedForDelete.size} karyawan? Tindakan ini tidak dapat dibatalkan.`)) {
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      const result = await employeeService.deleteMultipleEmployees(Array.from(selectedForDelete));
-      await loadEvaluatedEmployees();
-      setSelectedForDelete(new Set());
-      setBulkDeleteMode(false);
-      alert(`Berhasil menghapus ${result.success} karyawan${result.failed > 0 ? `, gagal: ${result.failed}` : ''}`);
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error('Error bulk deleting:', error);
-      alert(`Gagal menghapus data: ${err.message}`);
-    } finally {
-      setDeleting(false);
-    }
+    showConfirm(
+      `Yakin ingin menghapus ${selectedForDelete.size} karyawan?`,
+      async () => {
+        setDeleting(true);
+        try {
+          const result = await employeeService.deleteMultipleEmployees(Array.from(selectedForDelete));
+          await loadEvaluatedEmployees();
+          setSelectedForDelete(new Set());
+          setBulkDeleteMode(false);
+          showSuccess(`Berhasil menghapus ${result.success} karyawan${result.failed > 0 ? `, gagal: ${result.failed}` : ''}`);
+        } catch (error: unknown) {
+          const err = error as Error;
+          console.error('Error bulk deleting:', error);
+          showError(`Gagal menghapus data: ${err.message}`);
+        } finally {
+          setDeleting(false);
+        }
+      }
+    );
   };
 
   if (loading) {

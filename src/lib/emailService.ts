@@ -8,7 +8,6 @@ export const emailService = {
     data: EmailReminderData
   ): Promise<SendEmailResult> {
     try {
-      // Check if Resend is initialized
       if (!resend) {
         console.error('Resend client is not initialized. Check RESEND_API_KEY.');
         return {

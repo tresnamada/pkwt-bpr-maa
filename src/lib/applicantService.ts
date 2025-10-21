@@ -23,9 +23,6 @@ const BULAN_NAMES = [
 ];
 
 export const applicantService = {
-  /**
-   * Get all applicants with optional filtering
-   */
   async getApplicants(filter?: ApplicantFilter): Promise<Applicant[]> {
     try {
       const applicantsRef = collection(db, COLLECTION_NAME);
