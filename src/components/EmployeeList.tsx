@@ -15,12 +15,12 @@ export default function EmployeeList({ employees, onEvaluate, onRefresh }: Emplo
   const { showSuccess, showError, showConfirm } = useAlert();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleDelete = async (employeeId: string) => {
+  const handleDelete = async (employee: Employee) => {
     showConfirm(
       `Yakin ingin menghapus ${employee.name}?`,
       async () => {
         try {
-          await employeeService.deleteEmployee(employeeId);
+          await employeeService.deleteEmployee(employee.id);
           showSuccess('Karyawan berhasil dihapus');
           onRefresh();
         } catch (error) {
@@ -204,7 +204,7 @@ export default function EmployeeList({ employees, onEvaluate, onRefresh }: Emplo
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(employee.id)}
+                      onClick={() => handleDelete(employee)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
                     >
                       Hapus

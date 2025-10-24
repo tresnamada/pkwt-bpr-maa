@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -9,15 +9,29 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, error } = useAuth();
+  const { user, loading, error, adminData, isSuperAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
       // Redirect to login if not authenticated
       router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    // If user is branch admin and trying to access non-performance pages
+    if (!loading && user && adminData && !isSuperAdmin) {
+      // Allow access only to performance pages
+      const allowedPaths = ['/performance', '/login'];
+      const isAllowedPath = allowedPaths.some(path => pathname?.startsWith(path));
+      
+      if (!isAllowedPath && pathname !== '/') {
+        // Redirect branch admin to performance page
+        router.push('/performance');
+      }
+    }
+  }, [user, loading, router, adminData, isSuperAdmin, pathname]);
 
   // Loading state with spinner
   if (loading) {

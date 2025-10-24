@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAlert } from '@/contexts/AlertContext';
 import { employeeService } from '@/lib/employeeService';
@@ -11,7 +10,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import LogoutButton from '@/components/LogoutButton';
 
 export default function EvaluatedEmployeesPage() {
-  const router = useRouter();
   const { showSuccess, showError, showWarning, showConfirm } = useAlert();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);

@@ -219,7 +219,7 @@ class PerformanceService {
     }
   }
 
-  // Get all evaluations
+  // Get all evaluations (for super admin)
   async getAllEvaluations(): Promise<PerformanceEvaluation[]> {
     try {
       const q = query(
@@ -244,6 +244,36 @@ class PerformanceService {
       }) as PerformanceEvaluation[];
     } catch (error) {
       console.error('Error getting evaluations:', error);
+      throw error;
+    }
+  }
+
+  // Get evaluations by creator (for branch admin - data isolation)
+  async getEvaluationsByCreator(createdBy: string): Promise<PerformanceEvaluation[]> {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where('evaluatedBy', '==', createdBy),
+        orderBy('evaluationDate', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          evaluationDate: data.evaluationDate?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          editHistory: data.editHistory?.map((entry: { editedAt?: Timestamp; [key: string]: unknown }) => ({
+            ...entry,
+            editedAt: (entry.editedAt as Timestamp)?.toDate() || new Date()
+          })) || []
+        };
+      }) as PerformanceEvaluation[];
+    } catch (error) {
+      console.error('Error getting evaluations by creator:', error);
       throw error;
     }
   }
@@ -487,7 +517,7 @@ class PerformanceService {
     return results;
   }
 
-  // Get all knowledge entries
+  // Get all knowledge entries (for super admin)
   async getAllKnowledgeEntries(): Promise<KnowledgeEntry[]> {
     try {
       const q = query(
@@ -504,6 +534,28 @@ class PerformanceService {
       })) as KnowledgeEntry[];
     } catch (error) {
       console.error('Error getting knowledge entries:', error);
+      throw error;
+    }
+  }
+
+  // Get knowledge entries by creator (for branch admin - data isolation)
+  async getKnowledgeEntriesByCreator(createdBy: string): Promise<KnowledgeEntry[]> {
+    try {
+      const q = query(
+        collection(db, KNOWLEDGE_COLLECTION),
+        where('createdBy', '==', createdBy),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+      })) as KnowledgeEntry[];
+    } catch (error) {
+      console.error('Error getting knowledge entries by creator:', error);
       throw error;
     }
   }

@@ -47,3 +47,4 @@ check-data.js
 import-csv-to-firebase.js
 import-knowledge-csv.js
 deleteCollection.js
+create-super-admin.js

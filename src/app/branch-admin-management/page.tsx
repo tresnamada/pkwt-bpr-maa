@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminService } from '@/lib/adminService';
 import { BranchAdmin } from '@/types/admin';
@@ -10,7 +8,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Link from 'next/link';
 
 export default function BranchAdminManagementPage() {
-  const { user, isSuperAdmin, refreshAdminData } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [branchAdmins, setBranchAdmins] = useState<BranchAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [newAdmin, setNewAdmin] = useState({
@@ -57,29 +55,30 @@ export default function BranchAdminManagementPage() {
         return;
       }
 
-      // Create Firebase auth user
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        newAdmin.email,
-        newAdmin.password
-      );
+      // Create admin using API route (won't logout current user)
+      const response = await fetch('/api/create-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newAdmin.email,
+          password: newAdmin.password,
+          branch: newAdmin.branch,
+          role: newAdmin.role,
+          createdBy: user?.email || 'system'
+        })
+      });
 
-      // Create branch admin record in Firestore
-      await adminService.createBranchAdmin(
-        newAdmin.email,
-        newAdmin.branch,
-        newAdmin.role,
-        user?.email || 'system'
-      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal membuat admin');
+      }
 
       setSuccess(`Admin ${newAdmin.email} berhasil dibuat untuk cabang ${newAdmin.branch}!`);
       setNewAdmin({ email: '', password: '', branch: '', role: 'branch_admin' });
       await loadBranchAdmins();
-      
-      // Refresh current user's admin data if needed
-      if (user?.email === newAdmin.email) {
-        await refreshAdminData();
-      }
     } catch (error: unknown) {
       let errorMessage = 'Gagal membuat admin';
       const err = error as { code?: string; message?: string };
@@ -146,7 +145,7 @@ export default function BranchAdminManagementPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 text-slate-700">
         {/* Header */}
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

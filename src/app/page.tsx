@@ -7,15 +7,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && user) {
-      // Auto redirect to dashboard if already logged in
-      router.push('/dashboard');
+      // Auto redirect based on role
+      if (isSuperAdmin) {
+        router.push('/dashboard');
+      } else {
+        // Branch admin goes to performance page
+        router.push('/performance');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, isSuperAdmin, router]);
 
   if (loading) {
     return (

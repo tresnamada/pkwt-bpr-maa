@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LogoutButton() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { showError, showConfirm } = useAlert();
+  const { showError } = useAlert();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 

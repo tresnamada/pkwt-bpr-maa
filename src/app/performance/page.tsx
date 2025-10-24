@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -22,24 +22,42 @@ export default function PerformancePage() {
   const [filterBranch, setFilterBranch] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddKnowledgeModal, setShowAddKnowledgeModal] = useState(false);
   const [newKnowledge, setNewKnowledge] = useState({ name: '', branch: '', score: 0, tw1: 0, tw2: 0, tw3: 0 });
   const [savingKnowledge, setSavingKnowledge] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [evaluationsData, knowledgeData] = await Promise.all([
-        performanceService.getAllEvaluations(),
-        performanceService.getAllKnowledgeEntries()
-      ]);
+      
+      // Load data based on user role
+      let evaluationsData: PerformanceEvaluation[];
+      let knowledgeData: KnowledgeEntry[];
+      
+      if (isSuperAdmin) {
+        // Super admin can see all data
+        [evaluationsData, knowledgeData] = await Promise.all([
+          performanceService.getAllEvaluations(),
+          performanceService.getAllKnowledgeEntries()
+        ]);
+      } else {
+        // Branch admin can only see their own data
+        if (user?.email) {
+          [evaluationsData, knowledgeData] = await Promise.all([
+            performanceService.getEvaluationsByCreator(user.email),
+            performanceService.getKnowledgeEntriesByCreator(user.email)
+          ]);
+        } else {
+          evaluationsData = [];
+          knowledgeData = [];
+        }
+      }
+      
       setEvaluations(evaluationsData);
       setKnowledgeEntries(knowledgeData);
     } catch (error) {
@@ -191,28 +209,36 @@ export default function PerformancePage() {
 
               {/* Desktop Navigation */}
               <div className="hidden md:flex items-center space-x-3">
-                <Link
-                  href="/dashboard"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  Dashboard
-                </Link>
-                <Link
-                  href="/applicants"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Pelamar
-                </Link>
-                <div className="w-px h-8 bg-gray-200"></div>
+                {/* Only show Dashboard and Applicants for Super Admin */}
+                {isSuperAdmin && (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/applicants"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Pelamar
+                    </Link>
+                    <div className="w-px h-8 bg-gray-200"></div>
+                  </>
+                )}
                 <div className="flex items-center space-x-3">
                   <div className="text-right hidden lg:block">
-                    <p className="text-xs text-gray-500">Admin</p>
+                    <p className="text-xs text-gray-500">{isSuperAdmin ? 'Super Admin' : 'Admin Cabang'}</p>
+                    {!isSuperAdmin && userBranch && (
+                      <p className="text-xs font-medium text-gray-700">{userBranch}</p>
+                    )}
                   </div>
                   <LogoutButton />
                 </div>
@@ -232,21 +258,29 @@ export default function PerformancePage() {
             {/* Mobile Menu */}
             {showMobileMenu && (
               <div className="md:hidden py-4 border-t border-gray-200">
-                <Link
-                  href="/dashboard"
-                  className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  Dashboard Utama
-                </Link>
-                <Link
-                  href="/applicants"
-                  className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
-                >
-                  Database Pelamar
-                </Link>
+                {/* Only show Dashboard and Applicants for Super Admin */}
+                {isSuperAdmin && (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      Dashboard Utama
+                    </Link>
+                    <Link
+                      href="/applicants"
+                      className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
+                    >
+                      Database Pelamar
+                    </Link>
+                  </>
+                )}
                 <div className="px-4 py-3 mt-2 border-t border-gray-200">
                   <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                  <p className="text-xs text-gray-500">Administrator</p>
+                  <p className="text-xs text-gray-500">{isSuperAdmin ? 'Super Admin' : 'Admin Cabang'}</p>
+                  {!isSuperAdmin && userBranch && (
+                    <p className="text-xs font-medium text-gray-700 mt-1">{userBranch}</p>
+                  )}
                 </div>
                 <div className="px-4 mt-2">
                   <LogoutButton />

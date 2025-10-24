@@ -1,20 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write for employees collection
-    // Server-side API routes need access for cron jobs
-    match /employees/{document} {
-      allow read, write: if true;
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Allow test collection for Firebase testing
+    // Helper function to check if user is super admin
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/branchAdmins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/branchAdmins/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    // Helper function to get user email
+    function getUserEmail() {
+      return request.auth.token.email;
+    }
+    
+    // Branch Admins collection
+    match /branchAdmins/{adminId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // Employees collection - accessible by authenticated users
+    match /employees/{employeeId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Performance Evaluations - with data isolation
+    match /performanceEvaluations/{evaluationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (isSuperAdmin() || resource.data.evaluatedBy == getUserEmail());
+    }
+    
+    // Knowledge Entries - with data isolation
+    match /knowledgeEntries/{entryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (isSuperAdmin() || resource.data.createdBy == getUserEmail());
+    }
+    
+    // Reminders collection
+    match /reminders/{reminderId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Applicants collection
+    match /applicants/{applicantId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Test collection for Firebase testing
     match /test/{document} {
       allow read, write: if true;
     }
     
-    // Default: Allow all access
+    // Default: Require authentication for all other collections
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
   }
 }
