@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import serviceAccount from '../../../../firebase-service-account.json';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
-    });
+    // Try to use environment variables first (for production)
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        })
+      });
+    } else {
+      // Fallback to service account file (for local development)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const serviceAccount = require('../../../../firebase-service-account.json');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    }
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
   }
